@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Set;
+import java.util.HashSet;
 
 /** Immutable internal aggregate, not an outbound view model. */
 public final class Room {
@@ -22,9 +24,11 @@ public final class Room {
     private final List<Player> players;
     private final GameSession currentSession;
     private final long revision;
+    private final Set<PlayerIdentity.Guest> kickedGuests;
 
     private Room(String id, Instant createdAt, PlayerIdentity.Google owner, UUID gmPlayerId,
-                 List<Player> players, GameSession currentSession, long revision) {
+                 List<Player> players, GameSession currentSession, long revision,
+                 Set<PlayerIdentity.Guest> kickedGuests) {
         this.id = id;
         this.createdAt = createdAt;
         this.owner = owner;
@@ -32,12 +36,13 @@ public final class Room {
         this.players = List.copyOf(players);
         this.currentSession = currentSession;
         this.revision = revision;
+        this.kickedGuests = Set.copyOf(kickedGuests);
     }
 
     static Room create(String id, Instant createdAt, Player gm) {
         if (!(gm.identity() instanceof PlayerIdentity.Google google))
             throw new DomainException(DomainException.Code.NOT_AUTHORIZED);
-        return new Room(id, createdAt, google, gm.id(), List.of(gm), null, 0);
+        return new Room(id, createdAt, google, gm.id(), List.of(gm), null, 0, Set.of());
     }
 
     public String id() { return id; }
@@ -53,6 +58,7 @@ public final class Room {
 
     public Room addPlayer(Player player) {
         Objects.requireNonNull(player);
+        requireNotKicked(player.identity());
         if (!isLobby()) throw new DomainException(DomainException.Code.GAME_IN_PROGRESS);
         if (!(player.identity() instanceof PlayerIdentity.Guest))
             throw new DomainException(DomainException.Code.NOT_AUTHORIZED);
@@ -68,6 +74,7 @@ public final class Room {
     }
 
     public Player playerFor(PlayerIdentity identity) {
+        requireNotKicked(identity);
         return players.stream().filter(p -> p.identity().equals(identity)).findFirst()
                 .orElseThrow(() -> new DomainException(DomainException.Code.NOT_AUTHORIZED));
     }
@@ -88,10 +95,49 @@ public final class Room {
     }
 
     private Room copy(List<Player> updated) {
-        return new Room(id, createdAt, owner, gmPlayerId, updated, currentSession, revision);
+        return new Room(id, createdAt, owner, gmPlayerId, updated, currentSession, revision, kickedGuests);
     }
 
     Room committed(long nextRevision) {
-        return new Room(id, createdAt, owner, gmPlayerId, players, currentSession, nextRevision);
+        return new Room(id, createdAt, owner, gmPlayerId, players, currentSession, nextRevision, kickedGuests);
+    }
+
+    void requireNotKicked(PlayerIdentity identity) {
+        if (kickedGuests.contains(identity)) throw new DomainException(DomainException.Code.PLAYER_KICKED);
+    }
+
+    Room joinGuest(String nickname, PlayerIdentity.Guest identity, AvatarCatalog avatars) {
+        requireNotKicked(identity);
+        if (!isLobby()) throw new DomainException(DomainException.Code.GAME_IN_PROGRESS);
+        DomainException.requireText(nickname);
+        if (players.stream().anyMatch(p -> p.identity().equals(identity)))
+            throw new DomainException(DomainException.Code.IDENTITY_ALREADY_JOINED);
+        if (players.stream().anyMatch(p -> p.nickname().equals(nickname)))
+            throw new DomainException(DomainException.Code.NICKNAME_TAKEN);
+        if (players.size() >= MAX_PLAYERS) throw new DomainException(DomainException.Code.ROOM_FULL);
+        return addPlayer(Player.create(nickname, identity, avatars));
+    }
+
+    Room leave(PlayerIdentity identity) {
+        Player player = playerFor(identity);
+        if (player.id().equals(gmPlayerId)) throw new DomainException(DomainException.Code.GM_CANNOT_LEAVE);
+        if (!isLobby()) throw new DomainException(DomainException.Code.GAME_IN_PROGRESS);
+        return copy(players.stream().filter(p -> !p.id().equals(player.id())).toList());
+    }
+
+    /** Room-level kick only; active-session removal must be added with gameplay support. */
+    Room kick(PlayerIdentity actor, UUID targetId) {
+        Player gm = playerFor(actor);
+        if (!owner.equals(actor) || !gm.id().equals(gmPlayerId)
+                || gm.connectionState() != ConnectionState.CONNECTED)
+            throw new DomainException(DomainException.Code.NOT_AUTHORIZED);
+        if (gmPlayerId.equals(targetId)) throw new DomainException(DomainException.Code.GM_CANNOT_KICK_SELF);
+        if (!isLobby()) throw new DomainException(DomainException.Code.GAME_IN_PROGRESS);
+        Player target = players.stream().filter(p -> p.id().equals(targetId)).findFirst()
+                .orElseThrow(() -> new DomainException(DomainException.Code.PLAYER_NOT_FOUND));
+        var blocked = new HashSet<>(kickedGuests);
+        blocked.add((PlayerIdentity.Guest) target.identity());
+        return new Room(id, createdAt, owner, gmPlayerId,
+                players.stream().filter(p -> !p.id().equals(targetId)).toList(), currentSession, revision, blocked);
     }
 }

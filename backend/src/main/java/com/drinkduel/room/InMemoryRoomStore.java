@@ -8,11 +8,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.UnaryOperator;
+import java.util.random.RandomGenerator;
 
 public final class InMemoryRoomStore implements RoomStore {
     private static final String ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private final ConcurrentHashMap<String, Entry> rooms = new ConcurrentHashMap<>();
-    private final SecureRandom random = new SecureRandom();
+    private final RandomGenerator random;
     private final Clock clock;
     private final AvatarCatalog avatars;
 
@@ -23,8 +24,13 @@ public final class InMemoryRoomStore implements RoomStore {
     }
 
     public InMemoryRoomStore(Clock clock, AvatarCatalog avatars) {
+        this(clock, avatars, new SecureRandom());
+    }
+
+    InMemoryRoomStore(Clock clock, AvatarCatalog avatars, RandomGenerator random) {
         this.clock = Objects.requireNonNull(clock);
         this.avatars = Objects.requireNonNull(avatars);
+        this.random = Objects.requireNonNull(random);
     }
 
     @Override public Room create(PlayerIdentity.Google verifiedOwner, String nickname) {
