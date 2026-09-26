@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.random.RandomGenerator;
 
@@ -16,6 +18,7 @@ public final class InMemoryRoomStore implements RoomStore {
     private final RandomGenerator random;
     private final Clock clock;
     private final AvatarCatalog avatars;
+    private final List<Listener> listeners = new CopyOnWriteArrayList<>();
 
     private static final class Entry {
         private Room room;
@@ -68,7 +71,21 @@ public final class InMemoryRoomStore implements RoomStore {
                     || after.revision() != before.revision())
                 throw new DomainException(DomainException.Code.STALE_STATE);
             entry.room = after == before ? before : after.committed(before.revision() + 1);
+            if (after != before) listeners.forEach(listener -> listener.changed(entry.room));
             return entry.room;
+        }
+    }
+
+    @Override public void addListener(Listener listener) {
+        listeners.add(Objects.requireNonNull(listener));
+    }
+
+    @Override public <T> T inRoom(String roomId, Function<Room, T> operation) {
+        Entry entry = rooms.get(Objects.requireNonNull(roomId));
+        if (entry == null) throw new DomainException(DomainException.Code.ROOM_NOT_FOUND);
+        synchronized (entry) {
+            requireLive(roomId, entry);
+            return operation.apply(entry.room);
         }
     }
 
@@ -103,7 +120,9 @@ public final class InMemoryRoomStore implements RoomStore {
 
     private Removal delete(String id, Entry entry, RemovalReason reason) {
         entry.removed = true;
+        var removal = new Removal(entry.room, reason);
+        listeners.forEach(listener -> listener.removed(removal));
         rooms.remove(id, entry);
-        return new Removal(entry.room, reason);
+        return removal;
     }
 }
