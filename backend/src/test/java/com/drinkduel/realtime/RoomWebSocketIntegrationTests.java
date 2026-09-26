@@ -17,6 +17,38 @@ import static org.junit.jupiter.api.Assertions.*;
 class RoomWebSocketIntegrationTests {
     @Value("${local.server.port}") int port;
     @Autowired RoomService service;
+    @Autowired RoomStore store;
+
+    @Test void submitAndResetOverRealTransportNeverSendSecretText() throws Exception {
+        var room = service.createRoom(new PlayerIdentity.Google("game-owner"), "GM");
+        var token = GuestToken.generate();
+        try (var http = HttpClient.newHttpClient()) {
+            var messages = new Listener();
+            var socket = http.newWebSocketBuilder().buildAsync(uri(), messages).get(5, TimeUnit.SECONDS);
+            try {
+                send(socket, "JOIN_ROOM", room.id(), token, "Ken");
+                messages.next("STATE");
+                var opened = service.startWhoAmI(room.id(), room.owner());
+                String sessionId = opened.currentSession().orElseThrow().id().toString();
+                assertEquals("SUBMIT_NAME", messages.next("STATE").get("room").get("game").get("phase").asString());
+                var command = new RoomProtocol.Command("SUBMIT_NAME", UUID.randomUUID().toString(), room.id(),
+                        null, null, null, sessionId, "WIRE-SECRET-SENTINEL", null);
+                socket.sendText(new JsonMapper().writeValueAsString(command), true).get(5, TimeUnit.SECONDS);
+                JsonNode submitted = messages.next("STATE");
+                assertTrue(submitted.get("room").get("game").get("currentPlayerSubmitted").asBoolean());
+                assertFalse(submitted.toString().contains("WIRE-SECRET-SENTINEL"));
+                assertFalse(messages.next("COMMAND_RESULT").toString().contains("WIRE-SECRET-SENTINEL"));
+                var current = store.find(room.id()).orElseThrow();
+                UUID playerId = current.playerFor(token.identity()).id();
+                var state = (com.drinkduel.game.WhoAmIState) current.currentSession().orElseThrow().state();
+                service.resetSubmission(room.id(), room.owner(), UUID.fromString(sessionId), playerId,
+                        state.submissions().get(playerId).id());
+                JsonNode reset = messages.next("STATE");
+                assertEquals(0, reset.get("room").get("game").get("submittedCount").asInt());
+                assertFalse(reset.toString().contains("WIRE-SECRET-SENTINEL"));
+            } finally { socket.abort(); }
+        }
+    }
 
     @Test void realEndpointJoinsBroadcastsAndReplacesOldSocketWithFullResync() throws Exception {
         var room = service.createRoom(new PlayerIdentity.Google("integration-owner"), "GM");

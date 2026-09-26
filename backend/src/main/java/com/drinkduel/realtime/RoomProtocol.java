@@ -8,7 +8,12 @@ public final class RoomProtocol {
     private RoomProtocol() {}
 
     public record Command(String type, String requestId, String roomId, String nickname,
-                          String guestToken, String targetPlayerId) {
+                          String guestToken, String targetPlayerId, String sessionId,
+                          String secretName, String expectedSubmissionId) {
+        public Command(String type, String requestId, String roomId, String nickname,
+                       String guestToken, String targetPlayerId) {
+            this(type, requestId, roomId, nickname, guestToken, targetPlayerId, null, null, null);
+        }
         @Override public String toString() { return "RoomCommand[redacted]"; }
     }
 
@@ -19,7 +24,12 @@ public final class RoomProtocol {
     public record Snapshot(String roomId, long roomRevision, String expiresAt, UUID sessionId,
                            String lifecycle, UUID currentPlayerId, UUID gmPlayerId, boolean isGm,
                            int capacity, boolean joinable, List<String> allowedActions,
-                           List<PlayerView> players) {}
+                           List<PlayerView> players, SubmitNameView game) {}
+    public record SubmitNameView(String gameType, String phase, List<ParticipantView> participants,
+                                 int submittedCount, int participantCount, boolean currentPlayerSubmitted,
+                                 boolean readyForShuffle, boolean canShuffleWhenImplemented) {}
+    /** Reset guard is metadata for GM only; it never contains submitted text. */
+    public record ParticipantView(UUID playerId, boolean submitted, UUID resetSubmissionId) {}
     public record PlayerView(UUID playerId, String nickname, int avatarId, String connectionStatus) {}
     public record Result(String type, String requestId, boolean accepted, String code,
                          Long roomRevision) implements Message {

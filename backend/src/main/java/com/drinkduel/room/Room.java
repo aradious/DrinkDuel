@@ -87,7 +87,7 @@ public final class Room {
                 ? p.withConnectionState(state) : p).toList());
     }
 
-    /** Session eligibility only; starting a game and its command flow are not implemented yet. */
+    /** The start minimum does not remove disconnected members from participation. */
     public void requireSessionStartAllowed() {
         if (!isLobby()) throw new DomainException(DomainException.Code.GAME_IN_PROGRESS);
         long connected = players.stream().filter(p -> p.connectionState() == ConnectionState.CONNECTED).count();
@@ -125,19 +125,33 @@ public final class Room {
         return copy(players.stream().filter(p -> !p.id().equals(player.id())).toList());
     }
 
-    /** Room-level kick only; active-session removal must be added with gameplay support. */
-    Room kick(PlayerIdentity actor, UUID targetId) {
+    void requireGm(PlayerIdentity actor) {
         Player gm = playerFor(actor);
         if (!owner.equals(actor) || !gm.id().equals(gmPlayerId)
                 || gm.connectionState() != ConnectionState.CONNECTED)
             throw new DomainException(DomainException.Code.NOT_AUTHORIZED);
+    }
+
+    Room startSession(PlayerIdentity actor, GameSession session) {
+        requireGm(actor);
+        requireSessionStartAllowed();
+        return withSession(session);
+    }
+
+    Room withSession(GameSession session) {
+        return new Room(id, createdAt, owner, gmPlayerId, players,
+                Objects.requireNonNull(session), revision, kickedGuests);
+    }
+
+    Room kick(PlayerIdentity actor, UUID targetId) {
+        requireGm(actor);
         if (gmPlayerId.equals(targetId)) throw new DomainException(DomainException.Code.GM_CANNOT_KICK_SELF);
-        if (!isLobby()) throw new DomainException(DomainException.Code.GAME_IN_PROGRESS);
         Player target = players.stream().filter(p -> p.id().equals(targetId)).findFirst()
                 .orElseThrow(() -> new DomainException(DomainException.Code.PLAYER_NOT_FOUND));
         var blocked = new HashSet<>(kickedGuests);
         blocked.add((PlayerIdentity.Guest) target.identity());
+        var updatedSession = currentSession == null ? null : currentSession.withoutParticipant(targetId);
         return new Room(id, createdAt, owner, gmPlayerId,
-                players.stream().filter(p -> !p.id().equals(targetId)).toList(), currentSession, revision, blocked);
+                players.stream().filter(p -> !p.id().equals(targetId)).toList(), updatedSession, revision, blocked);
     }
 }

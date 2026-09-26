@@ -9,4 +9,7 @@ public record GameSession(UUID id, GameState state) {
         Objects.requireNonNull(state);
     }
     public GameType gameType() { return state.gameType(); }
+    public GameSession withoutParticipant(UUID playerId) {
+        return new GameSession(id, state.withoutParticipant(playerId));
+    }
 }
