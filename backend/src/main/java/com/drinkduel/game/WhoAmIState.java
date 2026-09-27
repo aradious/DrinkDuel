@@ -13,11 +13,18 @@ import static com.drinkduel.room.DomainException.Code.*;
 public final class WhoAmIState implements GameState {
     public enum Phase { SUBMIT_NAME, PLAYING, ROAST, REVEAL }
     public enum PlayerGameStatus { PLAYING, GOT_IT, GAVE_UP }
+    public record PlayerResult(PlayerGameStatus status, long version) {
+        public PlayerResult {
+            Objects.requireNonNull(status);
+            if (version < 0) throw new IllegalArgumentException("Invalid status version");
+        }
+    }
 
     private final List<UUID> participantIds;
     private final Map<UUID, SubmittedName> submissions;
     private final Map<UUID, WhoAmIAssignment> assignments;
     private final Phase phase;
+    private final Map<UUID, PlayerResult> results;
 
     public WhoAmIState(List<UUID> participantIds) {
         this(participantIds, Map.of());
@@ -27,20 +34,22 @@ public final class WhoAmIState implements GameState {
     }
 
     private WhoAmIState(List<UUID> participantIds, Map<UUID, SubmittedName> submissions) {
-        this(participantIds, submissions, Map.of(), Phase.SUBMIT_NAME);
+        this(participantIds, submissions, Map.of(), Phase.SUBMIT_NAME, Map.of());
     }
 
     private WhoAmIState(List<UUID> participantIds, Map<UUID, SubmittedName> submissions,
-                       Map<UUID, WhoAmIAssignment> assignments, Phase phase) {
+                       Map<UUID, WhoAmIAssignment> assignments, Phase phase, Map<UUID, PlayerResult> results) {
         this.participantIds = List.copyOf(Objects.requireNonNull(participantIds));
         this.submissions = Map.copyOf(submissions);
         this.assignments = Map.copyOf(assignments);
         this.phase = phase;
+        this.results = Map.copyOf(results);
     }
 
     public List<UUID> participantIds() { return participantIds; }
     public Map<UUID, SubmittedName> submissions() { return submissions; }
     public Map<UUID, WhoAmIAssignment> assignments() { return assignments; }
+    public Map<UUID, PlayerResult> results() { return results; }
 
     public WhoAmIState submit(UUID playerId, String nickname, String text) {
         requireSubmissionPhase();
@@ -68,9 +77,11 @@ public final class WhoAmIState implements GameState {
         if (phase == Phase.SUBMIT_NAME) updated.remove(playerId);
         var remainingAssignments = new HashMap<>(assignments);
         remainingAssignments.remove(playerId);
+        var remainingResults = new HashMap<>(results);
+        remainingResults.remove(playerId);
         // Kicks may leave fewer than two participants; preserve the unfinished round.
         return new WhoAmIState(participantIds.stream().filter(id -> !id.equals(playerId)).toList(),
-                updated, remainingAssignments, phase);
+                updated, remainingAssignments, phase, remainingResults);
     }
 
     public boolean readyForShuffle(Set<UUID> connectedPlayers) {
@@ -92,7 +103,42 @@ public final class WhoAmIState implements GameState {
             UUID recipient = participantIds.get(i);
             assigned.put(recipient, new WhoAmIAssignment(recipient, submissions.get(owners.get(i))));
         }
-        return new WhoAmIState(participantIds, submissions, assigned, Phase.PLAYING);
+        var initialResults = new HashMap<UUID, PlayerResult>();
+        participantIds.forEach(id -> initialResults.put(id, new PlayerResult(PlayerGameStatus.PLAYING, 0)));
+        return new WhoAmIState(participantIds, submissions, assigned, Phase.PLAYING, initialResults);
+    }
+
+    public WhoAmIState markGotIt(UUID playerId) {
+        return finish(playerId, PlayerGameStatus.GOT_IT);
+    }
+
+    public WhoAmIState giveUp(UUID playerId) {
+        return finish(playerId, PlayerGameStatus.GAVE_UP);
+    }
+
+    private WhoAmIState finish(UUID playerId, PlayerGameStatus status) {
+        PlayerResult result = playingResult(playerId);
+        if (result.status() != PlayerGameStatus.PLAYING) throw new DomainException(INVALID_TRANSITION);
+        return withResult(playerId, new PlayerResult(status, result.version() + 1));
+    }
+
+    public WhoAmIState resetStatus(UUID playerId, long expectedVersion) {
+        PlayerResult result = playingResult(playerId);
+        if (result.version() != expectedVersion) throw new DomainException(STALE_COMMAND);
+        if (result.status() == PlayerGameStatus.PLAYING) throw new DomainException(INVALID_TRANSITION);
+        return withResult(playerId, new PlayerResult(PlayerGameStatus.PLAYING, result.version() + 1));
+    }
+
+    private PlayerResult playingResult(UUID playerId) {
+        if (phase != Phase.PLAYING) throw new DomainException(INVALID_GAME_PHASE);
+        requireParticipant(playerId);
+        return results.get(playerId);
+    }
+
+    private WhoAmIState withResult(UUID playerId, PlayerResult result) {
+        var updated = new HashMap<>(results);
+        updated.put(playerId, result);
+        return new WhoAmIState(participantIds, submissions, assignments, phase, updated);
     }
 
     private void requireSubmissionPhase() {

@@ -95,10 +95,39 @@ public final class RoomService {
     }
 
     private WhoAmIState submissionState(Room room, UUID sessionId) {
+        return gameState(room, sessionId, WhoAmIState.Phase.SUBMIT_NAME);
+    }
+
+    public Room markGotIt(String roomId, PlayerIdentity actor, UUID sessionId, UUID targetPlayerId) {
+        return store.mutate(roomId, room -> {
+            room.requireGm(actor);
+            var state = gameState(room, sessionId, WhoAmIState.Phase.PLAYING);
+            return room.withSession(new GameSession(sessionId, state.markGotIt(targetPlayerId)));
+        });
+    }
+
+    public Room giveUp(String roomId, PlayerIdentity actor, UUID sessionId) {
+        return store.mutate(roomId, room -> {
+            Player player = room.playerFor(actor);
+            var state = gameState(room, sessionId, WhoAmIState.Phase.PLAYING);
+            return room.withSession(new GameSession(sessionId, state.giveUp(player.id())));
+        });
+    }
+
+    public Room resetPlayerStatus(String roomId, PlayerIdentity actor, UUID sessionId,
+                                  UUID targetPlayerId, long expectedStatusVersion) {
+        return store.mutate(roomId, room -> {
+            room.requireGm(actor);
+            var state = gameState(room, sessionId, WhoAmIState.Phase.PLAYING);
+            return room.withSession(new GameSession(sessionId, state.resetStatus(targetPlayerId, expectedStatusVersion)));
+        });
+    }
+
+    private WhoAmIState gameState(Room room, UUID sessionId, WhoAmIState.Phase phase) {
         var session = room.currentSession()
                 .orElseThrow(() -> new DomainException(DomainException.Code.INVALID_GAME_PHASE));
         if (!session.id().equals(sessionId)) throw new DomainException(DomainException.Code.STALE_COMMAND);
-        if (!(session.state() instanceof WhoAmIState state) || state.phase() != WhoAmIState.Phase.SUBMIT_NAME)
+        if (!(session.state() instanceof WhoAmIState state) || state.phase() != phase)
             throw new DomainException(DomainException.Code.INVALID_GAME_PHASE);
         return state;
     }

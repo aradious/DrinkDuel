@@ -31,7 +31,7 @@ public final class RoomRealtime implements RoomStore.Listener {
     }
     private record Binding(String roomId, UUID instance, UUID playerId, PlayerIdentity identity) {}
     private record Cached(String type, String target, String sessionId, String expectedSubmissionId,
-                          RoomProtocol.Result result, Instant until) {}
+                          Long expectedStatusVersion, RoomProtocol.Result result, Instant until) {}
     private static final class Channel {
         final UUID instance;
         final Map<UUID, Connection> active = new HashMap<>();
@@ -124,8 +124,8 @@ public final class RoomRealtime implements RoomStore.Listener {
                 || channel == null || channel.active.get(binding.playerId()) != connection)
             throw new DomainException(NOT_AUTHORIZED);
         initial.playerFor(binding.identity());
-        if ((command.type().equals("SUBMIT_NAME") || command.type().equals("GM_RESET_SUBMISSION") || command.type().equals("GM_SHUFFLE")
-                || command.type().equals("GM_KICK_PLAYER")) && !initial.isLobby()
+        if (Set.of("SUBMIT_NAME", "GM_RESET_SUBMISSION", "GM_SHUFFLE", "GM_KICK_PLAYER",
+                "GM_MARK_GOT_IT", "GIVE_UP", "GM_RESET_PLAYER_STATUS").contains(command.type()) && !initial.isLobby()
                 && !initial.currentSession().orElseThrow().id().toString().equals(command.sessionId()))
             throw new DomainException(STALE_COMMAND);
         var cache = channel.requests.computeIfAbsent(binding.playerId(), ignored -> new LinkedHashMap<>());
@@ -134,7 +134,8 @@ public final class RoomRealtime implements RoomStore.Listener {
         if (cached != null) {
             if (!cached.type().equals(command.type()) || !Objects.equals(cached.target(), command.targetPlayerId())
                     || !Objects.equals(cached.sessionId(), command.sessionId())
-                    || !Objects.equals(cached.expectedSubmissionId(), command.expectedSubmissionId()))
+                    || !Objects.equals(cached.expectedSubmissionId(), command.expectedSubmissionId())
+                    || !Objects.equals(cached.expectedStatusVersion(), command.expectedStatusVersion()))
                 throw new DomainException(INVALID_INPUT);
             connection.client.enqueue(views.forPlayer(initial, binding.playerId()));
             connection.client.enqueue(cached.result());
@@ -151,6 +152,13 @@ public final class RoomRealtime implements RoomStore.Listener {
                     UUID.fromString(command.targetPlayerId()));
             case "GM_SHUFFLE" -> result = service.shuffle(binding.roomId(), binding.identity(),
                     UUID.fromString(command.sessionId()));
+            case "GM_MARK_GOT_IT" -> result = service.markGotIt(binding.roomId(), binding.identity(),
+                    UUID.fromString(command.sessionId()), UUID.fromString(command.targetPlayerId()));
+            case "GIVE_UP" -> result = service.giveUp(binding.roomId(), binding.identity(),
+                    UUID.fromString(command.sessionId()));
+            case "GM_RESET_PLAYER_STATUS" -> result = service.resetPlayerStatus(binding.roomId(), binding.identity(),
+                    UUID.fromString(command.sessionId()), UUID.fromString(command.targetPlayerId()),
+                    command.expectedStatusVersion());
             case "GM_START_GAME" -> result = service.startWhoAmI(binding.roomId(), binding.identity());
             case "SUBMIT_NAME" -> result = service.submitName(binding.roomId(), binding.identity(),
                     UUID.fromString(command.sessionId()), command.secretName());
@@ -227,7 +235,7 @@ public final class RoomRealtime implements RoomStore.Listener {
         cache.values().removeIf(value -> !clock.instant().isBefore(value.until()));
         // Cache only command metadata and safe results, never a secret-name payload.
         cache.put(command.requestId(), new Cached(command.type(), command.targetPlayerId(),
-                command.sessionId(), command.expectedSubmissionId(), result,
+                command.sessionId(), command.expectedSubmissionId(), command.expectedStatusVersion(), result,
                 clock.instant().plus(Duration.ofMinutes(2))));
         while (cache.size() > 64) cache.remove(cache.keySet().iterator().next());
     }
@@ -246,7 +254,10 @@ public final class RoomRealtime implements RoomStore.Listener {
             throw new DomainException(INVALID_INPUT);
         if (!command.type().equals("GM_RESET_SUBMISSION") && command.expectedSubmissionId() != null)
             throw new DomainException(INVALID_INPUT);
-        if (!java.util.Set.of("SUBMIT_NAME", "GM_RESET_SUBMISSION", "GM_KICK_PLAYER", "GM_SHUFFLE").contains(command.type())
+        if (!command.type().equals("GM_RESET_PLAYER_STATUS") && command.expectedStatusVersion() != null)
+            throw new DomainException(INVALID_INPUT);
+        if (!Set.of("SUBMIT_NAME", "GM_RESET_SUBMISSION", "GM_KICK_PLAYER", "GM_SHUFFLE",
+                "GM_MARK_GOT_IT", "GIVE_UP", "GM_RESET_PLAYER_STATUS").contains(command.type())
                 && command.sessionId() != null) throw new DomainException(INVALID_INPUT);
         switch (command.type()) {
             case "JOIN_ROOM" -> {
@@ -269,6 +280,16 @@ public final class RoomRealtime implements RoomStore.Listener {
                     if (command.targetPlayerId() != null) throw new DomainException(INVALID_INPUT);
                 } else if (safeRequestId(command.targetPlayerId()) == null
                         || safeRequestId(command.expectedSubmissionId()) == null)
+                    throw new DomainException(INVALID_INPUT);
+            }
+            case "GM_MARK_GOT_IT", "GIVE_UP", "GM_RESET_PLAYER_STATUS" -> {
+                if (command.sessionId() == null || command.nickname() != null || command.guestToken() != null)
+                    throw new DomainException(INVALID_INPUT);
+                if (command.type().equals("GIVE_UP")) {
+                    if (command.targetPlayerId() != null) throw new DomainException(INVALID_INPUT);
+                } else if (safeRequestId(command.targetPlayerId()) == null) throw new DomainException(INVALID_INPUT);
+                if (command.type().equals("GM_RESET_PLAYER_STATUS")
+                        && (command.expectedStatusVersion() == null || command.expectedStatusVersion() < 0))
                     throw new DomainException(INVALID_INPUT);
             }
             default -> throw new DomainException(INVALID_INPUT);

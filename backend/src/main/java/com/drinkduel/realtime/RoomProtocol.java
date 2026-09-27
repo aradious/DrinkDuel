@@ -9,7 +9,13 @@ public final class RoomProtocol {
 
     public record Command(String type, String requestId, String roomId, String nickname,
                           String guestToken, String targetPlayerId, String sessionId,
-                          String secretName, String expectedSubmissionId) {
+                          String secretName, String expectedSubmissionId, Long expectedStatusVersion) {
+        public Command(String type, String requestId, String roomId, String nickname,
+                       String guestToken, String targetPlayerId, String sessionId,
+                       String secretName, String expectedSubmissionId) {
+            this(type, requestId, roomId, nickname, guestToken, targetPlayerId, sessionId,
+                    secretName, expectedSubmissionId, null);
+        }
         public Command(String type, String requestId, String roomId, String nickname,
                        String guestToken, String targetPlayerId) {
             this(type, requestId, roomId, nickname, guestToken, targetPlayerId, null, null, null);
@@ -30,7 +36,7 @@ public final class RoomProtocol {
                              boolean readyForShuffle, boolean canShuffle, List<GameCard> cards) {}
     /** No submission IDs or attribution. assignedName is null for the verified recipient's card. */
     public record GameCard(UUID playerId, String nickname, int avatarId, String connectionStatus,
-                           String gameStatus, String assignedName) {}
+                           String gameStatus, long statusVersion, String assignedName) {}
     /** Reset guard is metadata for GM only; it never contains submitted text. */
     public record ParticipantView(UUID playerId, boolean submitted, UUID resetSubmissionId) {}
     public record PlayerView(UUID playerId, String nickname, int avatarId, String connectionStatus) {}

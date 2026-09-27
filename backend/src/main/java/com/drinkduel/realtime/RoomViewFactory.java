@@ -32,6 +32,16 @@ public final class RoomViewFactory {
                 if (submitting && !state.submissions().isEmpty()) actions.add("GM_RESET_SUBMISSION");
                 if (ready) actions.add("GM_SHUFFLE");
             }
+            if (state.phase() == WhoAmIState.Phase.PLAYING) {
+                if (state.results().get(recipient).status() == WhoAmIState.PlayerGameStatus.PLAYING)
+                    actions.add("GIVE_UP");
+                if (connectedGm) {
+                    if (state.results().values().stream().anyMatch(r -> r.status() == WhoAmIState.PlayerGameStatus.PLAYING))
+                        actions.add("GM_MARK_GOT_IT");
+                    if (state.results().values().stream().anyMatch(r -> r.status() != WhoAmIState.PlayerGameStatus.PLAYING))
+                        actions.add("GM_RESET_PLAYER_STATUS");
+                }
+            }
             game = new RoomProtocol.WhoAmIView(state.gameType().name(), state.phase().name(),
                     submitting ? state.participantIds().stream().map(id -> {
                         var submission = state.submissions().get(id);
@@ -42,7 +52,8 @@ public final class RoomViewFactory {
                     ready, connectedGm && ready, state.phase() != WhoAmIState.Phase.PLAYING ? java.util.List.of() :
                     room.players().stream().filter(p -> state.participantIds().contains(p.id()))
                             .map(p -> new RoomProtocol.GameCard(p.id(), p.nickname(), p.avatarId(),
-                                    p.connectionState().name(), WhoAmIState.PlayerGameStatus.PLAYING.name(),
+                                    p.connectionState().name(), state.results().get(p.id()).status().name(),
+                                    state.results().get(p.id()).version(),
                                     p.id().equals(recipient) ? null : state.assignments().get(p.id()).submission().text()))
                             .toList());
         }

@@ -144,6 +144,59 @@ class RoomWebSocketIntegrationTests {
         }
     }
 
+
+    @Test void statusCommandsOverWebSocketEnforceAuthorityAndNeverRevealOwnAnswer() throws Exception {
+        var room = service.createRoom(new PlayerIdentity.Google("status-wire-owner"), "GM");
+        var token = GuestToken.generate();
+        try (var http = HttpClient.newHttpClient()) {
+            var messages = new Listener();
+            var socket = http.newWebSocketBuilder().buildAsync(uri(), messages).get(5, TimeUnit.SECONDS);
+            try {
+                send(socket, "JOIN_ROOM", room.id(), token, "Ken");
+                UUID guestId = UUID.fromString(messages.next("STATE").get("room").get("currentPlayerId").asString());
+                messages.next("COMMAND_RESULT");
+                UUID session = service.startWhoAmI(room.id(), room.owner()).currentSession().orElseThrow().id();
+                messages.next("STATE");
+                service.submitName(room.id(), room.owner(), session, "WIRE-OWN-HIDDEN");
+                messages.next("STATE");
+                service.submitName(room.id(), token.identity(), session, "WIRE-OTHER-VISIBLE");
+                messages.next("STATE");
+                service.shuffle(room.id(), room.owner(), session);
+                messages.next("STATE");
+                var forged = new RoomProtocol.Command("GM_MARK_GOT_IT", UUID.randomUUID().toString(), room.id(),
+                        null, null, guestId.toString(), session.toString(), null, null);
+                socket.sendText(new JsonMapper().writeValueAsString(forged), true).get(5, TimeUnit.SECONDS);
+                var denied = messages.next("COMMAND_RESULT");
+                assertEquals("NOT_AUTHORIZED", denied.get("code").asString());
+                assertFalse(denied.toString().contains("WIRE-"));
+                var give = new RoomProtocol.Command("GIVE_UP", UUID.randomUUID().toString(), room.id(),
+                        null, null, null, session.toString(), null, null);
+                socket.sendText(new JsonMapper().writeValueAsString(give), true).get(5, TimeUnit.SECONDS);
+                var gaveUp = messages.next("STATE");
+                assertPlayingWire(gaveUp, guestId, token, room);
+                assertEquals("GAVE_UP", gaveUp.get("room").get("game").get("cards").get(1).get("gameStatus").asString());
+                assertTrue(messages.next("COMMAND_RESULT").get("accepted").asBoolean());
+                service.resetPlayerStatus(room.id(), room.owner(), session, guestId, 1);
+                var reset = messages.next("STATE");
+                assertPlayingWire(reset, guestId, token, room);
+                assertEquals("PLAYING", reset.get("room").get("game").get("cards").get(1).get("gameStatus").asString());
+                service.markGotIt(room.id(), room.owner(), session, guestId);
+                var gotIt = messages.next("STATE");
+                assertPlayingWire(gotIt, guestId, token, room);
+                assertEquals("GOT_IT", gotIt.get("room").get("game").get("cards").get(1).get("gameStatus").asString());
+                send(socket, "GET_STATE", room.id(), null, null);
+                assertPlayingWire(messages.next("STATE"), guestId, token, room);
+                messages.next("COMMAND_RESULT");
+                socket.sendText(new JsonMapper().writeValueAsString(new RoomProtocol.Command("GIVE_UP",
+                        UUID.randomUUID().toString(), room.id(), null, null, null, session.toString(), null, null)),
+                        true).get(5, TimeUnit.SECONDS);
+                var invalid = messages.next("COMMAND_RESULT");
+                assertEquals("INVALID_TRANSITION", invalid.get("code").asString());
+                assertFalse(invalid.toString().contains("WIRE-"));
+            } finally { socket.abort(); }
+        }
+    }
+
     private void assertPlayingWire(JsonNode message, UUID self, GuestToken token, Room room) {
         String wire = message.toString();
         assertFalse(wire.contains("WIRE-OWN-HIDDEN"));
