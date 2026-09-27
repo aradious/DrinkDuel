@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 public final class RoomService {
     private final RoomStore store;
     private final AvatarCatalog avatars;
+    private final java.security.SecureRandom shuffleRandom = new java.security.SecureRandom();
 
     public RoomService(RoomStore store, AvatarCatalog avatars) {
         this.store = Objects.requireNonNull(store);
@@ -79,6 +80,17 @@ public final class RoomService {
             room.requireGm(actor);
             var state = submissionState(room, sessionId);
             return room.withSession(new GameSession(sessionId, state.reset(targetPlayerId, expectedSubmissionId)));
+        });
+    }
+
+    public Room shuffle(String roomId, PlayerIdentity actor, UUID sessionId) {
+        return store.mutate(roomId, room -> {
+            room.requireGm(actor);
+            var state = submissionState(room, sessionId);
+            var connected = room.players().stream()
+                    .filter(p -> p.connectionState() == ConnectionState.CONNECTED)
+                    .map(Player::id).collect(java.util.stream.Collectors.toSet());
+            return room.withSession(new GameSession(sessionId, state.shuffle(connected, shuffleRandom)));
         });
     }
 

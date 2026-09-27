@@ -89,11 +89,11 @@ class WhoAmIRealtimeTests {
         assertFalse(gm.client.state().game().readyForShuffle());
         submit(gm, "SECRET-DORAEMON");
         assertTrue(gm.client.state().game().readyForShuffle());
-        assertTrue(gm.client.state().game().canShuffleWhenImplemented());
-        assertFalse(guest.client.state().game().canShuffleWhenImplemented());
+        assertTrue(gm.client.state().game().canShuffle());
+        assertFalse(guest.client.state().game().canShuffle());
         assertTrue(guest.client.state().game().participants().stream().allMatch(RoomProtocol.ParticipantView::submitted));
         assertTrue(guest.client.state().game().participants().stream().allMatch(p -> p.resetSubmissionId() == null));
-        assertFalse(gm.client.state().allowedActions().contains("GM_SHUFFLE"));
+        assertTrue(gm.client.state().allowedActions().contains("GM_SHUFFLE"));
         assertNoSecrets("SECRET-DORAEMON", token.value(), token.identity().fingerprint(), room.owner().subject());
     }
 
@@ -195,7 +195,7 @@ class WhoAmIRealtimeTests {
         assertEquals("STALE_COMMAND", guest.client.result().code());
         assertEquals(current().revision(), guest.client.state().roomRevision());
         realtime.command(gm.connection, command("GM_SHUFFLE", null, null, null));
-        assertEquals("INVALID_INPUT", gm.client.result().code());
+        assertEquals("GAME_NOT_READY", gm.client.result().code());
         assertTrue(state().submissions().isEmpty());
         assertNoSecrets("SECRET-FORGED", "SECRET-STALE");
     }

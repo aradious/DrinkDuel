@@ -15,7 +15,7 @@ public final class RoomViewFactory {
         var connected = room.players().stream().filter(p -> p.connectionState() == ConnectionState.CONNECTED)
                 .map(Player::id).collect(java.util.stream.Collectors.toSet());
         actions.add("GET_STATE");
-        RoomProtocol.SubmitNameView game = null;
+        RoomProtocol.WhoAmIView game = null;
         if (room.isLobby()) {
             if (!gm) actions.add("LEAVE_ROOM");
             else if (connectedGm) {
@@ -23,20 +23,28 @@ public final class RoomViewFactory {
                 if (connected.size() >= Room.MIN_ACTIVE_PLAYERS) actions.add("GM_START_GAME");
             }
         } else if (room.currentSession().orElseThrow().state() instanceof WhoAmIState state) {
+            boolean submitting = state.phase() == WhoAmIState.Phase.SUBMIT_NAME;
             boolean submitted = state.submissions().containsKey(recipient);
             boolean ready = state.readyForShuffle(connected);
-            if (state.participantIds().contains(recipient) && !submitted) actions.add("SUBMIT_NAME");
+            if (submitting && state.participantIds().contains(recipient) && !submitted) actions.add("SUBMIT_NAME");
             if (connectedGm) {
                 actions.add("GM_KICK_PLAYER");
-                if (!state.submissions().isEmpty()) actions.add("GM_RESET_SUBMISSION");
+                if (submitting && !state.submissions().isEmpty()) actions.add("GM_RESET_SUBMISSION");
+                if (ready) actions.add("GM_SHUFFLE");
             }
-            game = new RoomProtocol.SubmitNameView(state.gameType().name(), state.phase().name(),
-                    state.participantIds().stream().map(id -> {
+            game = new RoomProtocol.WhoAmIView(state.gameType().name(), state.phase().name(),
+                    submitting ? state.participantIds().stream().map(id -> {
                         var submission = state.submissions().get(id);
                         return new RoomProtocol.ParticipantView(id, submission != null,
                                 connectedGm && submission != null ? submission.id() : null);
-                    }).toList(), state.submissions().size(), state.participantIds().size(), submitted,
-                    ready, connectedGm && ready);
+                    }).toList() : java.util.List.of(), submitting ? state.submissions().size() : 0,
+                    state.participantIds().size(), submitting && submitted,
+                    ready, connectedGm && ready, state.phase() != WhoAmIState.Phase.PLAYING ? java.util.List.of() :
+                    room.players().stream().filter(p -> state.participantIds().contains(p.id()))
+                            .map(p -> new RoomProtocol.GameCard(p.id(), p.nickname(), p.avatarId(),
+                                    p.connectionState().name(), WhoAmIState.PlayerGameStatus.PLAYING.name(),
+                                    p.id().equals(recipient) ? null : state.assignments().get(p.id()).submission().text()))
+                            .toList());
         }
         return new RoomProtocol.State(new RoomProtocol.Snapshot(room.id(), room.revision(),
                 room.expiresAt().toString(), room.currentSession().map(s -> s.id()).orElse(null),

@@ -90,6 +90,76 @@ class RoomWebSocketIntegrationTests {
         }
     }
 
+
+    @Test void playingWireViewsHideOwnSecretOnShuffleGetStateAndReconnect() throws Exception {
+        var room = service.createRoom(new PlayerIdentity.Google("wire-shuffle-owner"), "GM");
+        var token = GuestToken.generate();
+        try (var http = HttpClient.newHttpClient()) {
+            var messages = new Listener();
+            var socket = http.newWebSocketBuilder().buildAsync(uri(), messages).get(5, TimeUnit.SECONDS);
+            WebSocket back = null;
+            try {
+                send(socket, "JOIN_ROOM", room.id(), token, "Ken");
+                var initial = messages.next("STATE").get("room");
+                messages.next("COMMAND_RESULT");
+                UUID guestId = UUID.fromString(initial.get("currentPlayerId").asString());
+                var opened = service.startWhoAmI(room.id(), room.owner());
+                UUID session = opened.currentSession().orElseThrow().id();
+                messages.next("STATE");
+                service.submitName(room.id(), room.owner(), session, "WIRE-OWN-HIDDEN");
+                messages.next("STATE");
+                service.submitName(room.id(), token.identity(), session, "WIRE-OTHER-VISIBLE");
+                messages.next("STATE");
+                service.shuffle(room.id(), room.owner(), session);
+                assertPlayingWire(messages.next("STATE"), guestId, token, room);
+                send(socket, "GET_STATE", room.id(), null, null);
+                assertPlayingWire(messages.next("STATE"), guestId, token, room);
+                assertFalse(messages.next("COMMAND_RESULT").toString().contains("WIRE-"));
+                // Both the known target field and an unknown recipient override must be rejected.
+                var forged = new RoomProtocol.Command("GET_STATE", UUID.randomUUID().toString(), room.id(),
+                        null, null, room.gmPlayerId().toString());
+                socket.sendText(new JsonMapper().writeValueAsString(forged), true).get(5, TimeUnit.SECONDS);
+                var error = messages.next("COMMAND_RESULT");
+                assertEquals("INVALID_INPUT", error.get("code").asString());
+                assertFalse(error.toString().contains("WIRE-"));
+                String unknown = new JsonMapper().writeValueAsString(
+                        new RoomProtocol.Command("GET_STATE", UUID.randomUUID().toString(), room.id(), null, null, null));
+                unknown = unknown.substring(0, unknown.length() - 1) + ",\"playerId\":\"" + room.gmPlayerId() + "\"}";
+                socket.sendText(unknown, true).get(5, TimeUnit.SECONDS);
+                error = messages.next("COMMAND_RESULT");
+                assertEquals("INVALID_INPUT", error.get("code").asString());
+                assertFalse(error.toString().contains("WIRE-"));
+                var before = store.find(room.id()).orElseThrow().currentSession().orElseThrow();
+                var resumed = new Listener();
+                back = http.newWebSocketBuilder().buildAsync(uri(), resumed).get(5, TimeUnit.SECONDS);
+                send(back, "RESUME_ROOM", room.id(), token, null);
+                var restored = resumed.next("STATE");
+                assertPlayingWire(restored, guestId, token, room);
+                assertEquals(initial.get("players"), restored.get("room").get("players"));
+                assertSame(before, store.find(room.id()).orElseThrow().currentSession().orElseThrow());
+            } finally {
+                socket.abort();
+                if (back != null) back.abort();
+            }
+        }
+    }
+
+    private void assertPlayingWire(JsonNode message, UUID self, GuestToken token, Room room) {
+        String wire = message.toString();
+        assertFalse(wire.contains("WIRE-OWN-HIDDEN"));
+        assertTrue(wire.contains("WIRE-OTHER-VISIBLE"));
+        for (String forbidden : java.util.List.of("submitterPlayerId", "submitterNickname", "resetSubmissionId",
+                token.value(), token.identity().fingerprint(), room.owner().subject()))
+            assertFalse(wire.contains(forbidden));
+        var view = message.get("room");
+        assertEquals(self.toString(), view.get("currentPlayerId").asString());
+        assertEquals("PLAYING", view.get("game").get("phase").asString());
+        for (JsonNode card : view.get("game").get("cards")) {
+            if (card.get("playerId").asString().equals(self.toString())) assertTrue(card.get("assignedName").isNull());
+            else assertEquals("WIRE-OTHER-VISIBLE", card.get("assignedName").asString());
+        }
+    }
+
     private URI uri() { return URI.create("ws://localhost:" + port + "/ws/rooms"); }
     private void send(WebSocket socket, String type, String roomId, GuestToken token, String nickname) throws Exception {
         var command = new RoomProtocol.Command(type, UUID.randomUUID().toString(), roomId, nickname,

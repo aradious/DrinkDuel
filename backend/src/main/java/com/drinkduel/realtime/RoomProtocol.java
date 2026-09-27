@@ -24,10 +24,13 @@ public final class RoomProtocol {
     public record Snapshot(String roomId, long roomRevision, String expiresAt, UUID sessionId,
                            String lifecycle, UUID currentPlayerId, UUID gmPlayerId, boolean isGm,
                            int capacity, boolean joinable, List<String> allowedActions,
-                           List<PlayerView> players, SubmitNameView game) {}
-    public record SubmitNameView(String gameType, String phase, List<ParticipantView> participants,
-                                 int submittedCount, int participantCount, boolean currentPlayerSubmitted,
-                                 boolean readyForShuffle, boolean canShuffleWhenImplemented) {}
+                           List<PlayerView> players, WhoAmIView game) {}
+    public record WhoAmIView(String gameType, String phase, List<ParticipantView> participants,
+                             int submittedCount, int participantCount, boolean currentPlayerSubmitted,
+                             boolean readyForShuffle, boolean canShuffle, List<GameCard> cards) {}
+    /** No submission IDs or attribution. assignedName is null for the verified recipient's card. */
+    public record GameCard(UUID playerId, String nickname, int avatarId, String connectionStatus,
+                           String gameStatus, String assignedName) {}
     /** Reset guard is metadata for GM only; it never contains submitted text. */
     public record ParticipantView(UUID playerId, boolean submitted, UUID resetSubmissionId) {}
     public record PlayerView(UUID playerId, String nickname, int avatarId, String connectionStatus) {}
