@@ -197,6 +197,61 @@ class RoomWebSocketIntegrationTests {
         }
     }
 
+    @Test void lifecycleOverRealTransportHidesRoastSecretsThenRevealsAndClearsRound() throws Exception {
+        var room = service.createRoom(new PlayerIdentity.Google("lifecycle-wire-owner"), "GM");
+        var token = GuestToken.generate();
+        try (var http = HttpClient.newHttpClient()) {
+            var messages = new Listener();
+            var socket = http.newWebSocketBuilder().buildAsync(uri(), messages).get(5, TimeUnit.SECONDS);
+            try {
+                send(socket, "JOIN_ROOM", room.id(), token, "Ken");
+                var joined = messages.next("STATE").get("room"); messages.next("COMMAND_RESULT");
+                UUID session = service.startWhoAmI(room.id(), room.owner()).currentSession().orElseThrow().id();
+                messages.next("STATE");
+                service.submitName(room.id(), room.owner(), session, "WIRE-OWN-HIDDEN"); messages.next("STATE");
+                service.submitName(room.id(), token.identity(), session, "WIRE-OTHER-VISIBLE"); messages.next("STATE");
+                service.shuffle(room.id(), room.owner(), session);
+                assertPlayingWire(messages.next("STATE"), UUID.fromString(joined.get("currentPlayerId").asString()), token, room);
+                var forged = new RoomProtocol.Command("GM_END_GAME", UUID.randomUUID().toString(), room.id(),
+                        null, null, null, session.toString(), null, null);
+                socket.sendText(new JsonMapper().writeValueAsString(forged), true).get(5, TimeUnit.SECONDS);
+                assertEquals("NOT_AUTHORIZED", messages.next("COMMAND_RESULT").get("code").asString());
+                service.endGame(room.id(), room.owner(), session);
+                var roast = messages.next("STATE");
+                assertEquals("ROAST", roast.get("room").get("game").get("phase").asString());
+                assertFalse(roast.toString().contains("WIRE-")); assertFalse(roast.toString().contains("createdBy"));
+                service.continueReveal(room.id(), room.owner(), session);
+                var revealed = messages.next("STATE");
+                var cards = revealed.get("room").get("game").get("reveal");
+                assertEquals(2, cards.size());
+                assertEquals("WIRE-OTHER-VISIBLE", cards.get(0).get("assignedName").asString());
+                assertEquals("Ken", cards.get(0).get("createdBy").asString());
+                assertEquals("WIRE-OWN-HIDDEN", cards.get(1).get("assignedName").asString());
+                assertEquals("GM", cards.get(1).get("createdBy").asString());
+                for (String secret : java.util.List.of(token.value(), token.identity().fingerprint(), room.owner().subject(),
+                        "submitterPlayerId", "statusVersion", "resetSubmissionId")) assertFalse(revealed.toString().contains(secret));
+                service.playAgain(room.id(), room.owner(), session);
+                var fresh = messages.next("STATE").get("room");
+                assertEquals("SUBMIT_NAME", fresh.get("game").get("phase").asString());
+                assertNotEquals(session.toString(), fresh.get("sessionId").asString());
+                assertFalse(fresh.toString().contains("WIRE-"));
+                assertEquals(joined.get("players"), fresh.get("players"));
+                UUID next = UUID.fromString(fresh.get("sessionId").asString());
+                service.submitName(room.id(), room.owner(), next, "Round two GM"); messages.next("STATE");
+                service.submitName(room.id(), token.identity(), next, "Round two Ken"); messages.next("STATE");
+                service.shuffle(room.id(), room.owner(), next); messages.next("STATE");
+                service.endGame(room.id(), room.owner(), next); messages.next("STATE");
+                service.continueReveal(room.id(), room.owner(), next); messages.next("STATE");
+                service.backToRoom(room.id(), room.owner(), next);
+                var lobby = messages.next("STATE").get("room");
+                assertTrue(lobby.get("game").isNull()); assertTrue(lobby.get("joinable").asBoolean());
+                assertFalse(lobby.toString().contains("Round two"));
+                service.closeRoom(room.id(), room.owner(), null);
+                assertEquals("CLOSED", messages.next("ROOM_ENDED").get("reason").asString());
+            } finally { socket.abort(); }
+        }
+    }
+
     private void assertPlayingWire(JsonNode message, UUID self, GuestToken token, Room room) {
         String wire = message.toString();
         assertFalse(wire.contains("WIRE-OWN-HIDDEN"));

@@ -200,9 +200,9 @@ class WhoAmIStatusRealtimeTests {
         assertSafe(gm);
     }
 
-    @Test void cluesAndLaterPhaseCommandsAreNotAccepted() {
+    @Test void cluesCommandsAreNotAccepted() {
         var before = current();
-        for (String type : List.of("UPDATE_MY_CLUES", "GET_MY_CLUES", "GM_END_GAME", "GM_CONTINUE_REVEAL", "GM_PLAY_AGAIN")) {
+        for (String type : List.of("UPDATE_MY_CLUES", "GET_MY_CLUES")) {
             send(guest, command(type, null, null));
             assertEquals("INVALID_INPUT", guest.client.result().code());
         }

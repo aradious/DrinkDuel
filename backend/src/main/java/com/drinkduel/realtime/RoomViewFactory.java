@@ -32,6 +32,13 @@ public final class RoomViewFactory {
                 if (submitting && !state.submissions().isEmpty()) actions.add("GM_RESET_SUBMISSION");
                 if (ready) actions.add("GM_SHUFFLE");
             }
+            if (connectedGm) {
+                if (state.phase() == WhoAmIState.Phase.PLAYING) actions.add("GM_END_GAME");
+                if (state.phase() == WhoAmIState.Phase.ROAST) actions.add("GM_CONTINUE_REVEAL");
+                if (state.canBackToRoom()) actions.add("GM_BACK_TO_ROOM");
+                if (state.phase() == WhoAmIState.Phase.REVEAL && connected.size() >= Room.MIN_ACTIVE_PLAYERS)
+                    actions.add("GM_PLAY_AGAIN");
+            }
             if (state.phase() == WhoAmIState.Phase.PLAYING) {
                 if (state.results().get(recipient).status() == WhoAmIState.PlayerGameStatus.PLAYING)
                     actions.add("GIVE_UP");
@@ -55,8 +62,17 @@ public final class RoomViewFactory {
                                     p.connectionState().name(), state.results().get(p.id()).status().name(),
                                     state.results().get(p.id()).version(),
                                     p.id().equals(recipient) ? null : state.assignments().get(p.id()).submission().text()))
-                            .toList());
+                            .toList(), state.phase() == WhoAmIState.Phase.ROAST ? new RoomProtocol.RoastView(
+                            state.roastSummary().kind().name(), state.roastSummary().playingPlayerIds(),
+                            state.roastSummary().gaveUpPlayerIds()) : null,
+                    state.phase() != WhoAmIState.Phase.REVEAL ? java.util.List.of() :
+                    room.players().stream().filter(p -> state.participantIds().contains(p.id())).map(p -> {
+                        var submission = state.assignments().get(p.id()).submission();
+                        return new RoomProtocol.RevealCard(p.id(), p.nickname(), p.avatarId(),
+                                state.results().get(p.id()).status().name(), submission.text(), submission.submitterNickname());
+                    }).toList());
         }
+        if (connectedGm) actions.add("GM_CLOSE_ROOM");
         return new RoomProtocol.State(new RoomProtocol.Snapshot(room.id(), room.revision(),
                 room.expiresAt().toString(), room.currentSession().map(s -> s.id()).orElse(null),
                 room.isLobby() ? "LOBBY" : "IN_GAME", recipient, room.gmPlayerId(), gm,

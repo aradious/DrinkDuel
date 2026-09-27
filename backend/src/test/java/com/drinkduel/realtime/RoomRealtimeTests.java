@@ -72,7 +72,7 @@ class RoomRealtimeTests {
         assertEquals(current().playerFor(token.identity()).id(), guestView.currentPlayerId());
         assertTrue(gmView.isGm());
         assertFalse(guestView.isGm());
-        assertEquals(List.of("GET_STATE", "GM_KICK_PLAYER", "GM_START_GAME"), gmView.allowedActions());
+        assertEquals(List.of("GET_STATE", "GM_KICK_PLAYER", "GM_START_GAME", "GM_CLOSE_ROOM"), gmView.allowedActions());
         assertEquals(List.of("GET_STATE", "LEAVE_ROOM"), guestView.allowedActions());
         assertEquals("LOBBY", guestView.lifecycle());
         assertEquals(20, guestView.capacity());

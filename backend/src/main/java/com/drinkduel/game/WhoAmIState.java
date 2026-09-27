@@ -13,6 +13,13 @@ import static com.drinkduel.room.DomainException.Code.*;
 public final class WhoAmIState implements GameState {
     public enum Phase { SUBMIT_NAME, PLAYING, ROAST, REVEAL }
     public enum PlayerGameStatus { PLAYING, GOT_IT, GAVE_UP }
+    public enum RoastKind { LAST_ONE, PLAYING_GROUP, GAVE_UP_GROUP, GROUP_SUCCESS }
+    public record RoastSummary(RoastKind kind, List<UUID> playingPlayerIds, List<UUID> gaveUpPlayerIds) {
+        public RoastSummary {
+            playingPlayerIds = List.copyOf(playingPlayerIds);
+            gaveUpPlayerIds = List.copyOf(gaveUpPlayerIds);
+        }
+    }
     public record PlayerResult(PlayerGameStatus status, long version) {
         public PlayerResult {
             Objects.requireNonNull(status);
@@ -143,6 +150,30 @@ public final class WhoAmIState implements GameState {
 
     private void requireSubmissionPhase() {
         if (phase != Phase.SUBMIT_NAME) throw new DomainException(INVALID_GAME_PHASE);
+    }
+
+    public WhoAmIState endGame() {
+        if (phase != Phase.PLAYING) throw new DomainException(INVALID_GAME_PHASE);
+        return new WhoAmIState(participantIds, submissions, assignments, Phase.ROAST, results);
+    }
+
+    public WhoAmIState continueReveal() {
+        if (phase != Phase.ROAST) throw new DomainException(INVALID_GAME_PHASE);
+        return new WhoAmIState(participantIds, submissions, assignments, Phase.REVEAL, results);
+    }
+
+    /** Results cannot change after End Game. Kicks remove only the departed participant's result. */
+    public RoastSummary roastSummary() {
+        if (phase != Phase.ROAST && phase != Phase.REVEAL) throw new DomainException(INVALID_GAME_PHASE);
+        var playing = participantIds.stream().filter(id -> results.get(id).status() == PlayerGameStatus.PLAYING).toList();
+        var gaveUp = participantIds.stream().filter(id -> results.get(id).status() == PlayerGameStatus.GAVE_UP).toList();
+        var kind = playing.size() == 1 ? RoastKind.LAST_ONE : !playing.isEmpty() ? RoastKind.PLAYING_GROUP
+                : !gaveUp.isEmpty() ? RoastKind.GAVE_UP_GROUP : RoastKind.GROUP_SUCCESS;
+        return new RoastSummary(kind, playing, gaveUp);
+    }
+
+    public boolean canBackToRoom() {
+        return phase == Phase.REVEAL || (phase == Phase.SUBMIT_NAME && participantIds.size() < 2);
     }
 
     private void requireParticipant(UUID playerId) {

@@ -90,6 +90,10 @@ public final class Room {
     /** The start minimum does not remove disconnected members from participation. */
     public void requireSessionStartAllowed() {
         if (!isLobby()) throw new DomainException(DomainException.Code.GAME_IN_PROGRESS);
+        requireMinimumActivePlayers();
+    }
+
+    void requireMinimumActivePlayers() {
         long connected = players.stream().filter(p -> p.connectionState() == ConnectionState.CONNECTED).count();
         if (connected < MIN_ACTIVE_PLAYERS) throw new DomainException(DomainException.Code.NOT_ENOUGH_PLAYERS);
     }
@@ -141,6 +145,10 @@ public final class Room {
     Room withSession(GameSession session) {
         return new Room(id, createdAt, owner, gmPlayerId, players,
                 Objects.requireNonNull(session), revision, kickedGuests);
+    }
+
+    Room withoutSession() {
+        return new Room(id, createdAt, owner, gmPlayerId, players, null, revision, kickedGuests);
     }
 
     Room kick(PlayerIdentity actor, UUID targetId) {

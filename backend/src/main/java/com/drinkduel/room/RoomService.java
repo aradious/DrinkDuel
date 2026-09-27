@@ -124,11 +124,61 @@ public final class RoomService {
     }
 
     private WhoAmIState gameState(Room room, UUID sessionId, WhoAmIState.Phase phase) {
+        var state = gameState(room, sessionId);
+        if (state.phase() != phase) throw new DomainException(DomainException.Code.INVALID_GAME_PHASE);
+        return state;
+    }
+
+    private WhoAmIState gameState(Room room, UUID sessionId) {
         var session = room.currentSession()
                 .orElseThrow(() -> new DomainException(DomainException.Code.INVALID_GAME_PHASE));
         if (!session.id().equals(sessionId)) throw new DomainException(DomainException.Code.STALE_COMMAND);
-        if (!(session.state() instanceof WhoAmIState state) || state.phase() != phase)
+        if (!(session.state() instanceof WhoAmIState state))
             throw new DomainException(DomainException.Code.INVALID_GAME_PHASE);
         return state;
+    }
+
+    public Room endGame(String roomId, PlayerIdentity actor, UUID sessionId) {
+        return store.mutate(roomId, room -> {
+            room.requireGm(actor);
+            return room.withSession(new GameSession(sessionId, gameState(room, sessionId).endGame()));
+        });
+    }
+
+    public Room continueReveal(String roomId, PlayerIdentity actor, UUID sessionId) {
+        return store.mutate(roomId, room -> {
+            room.requireGm(actor);
+            return room.withSession(new GameSession(sessionId, gameState(room, sessionId).continueReveal()));
+        });
+    }
+
+    public Room playAgain(String roomId, PlayerIdentity actor, UUID sessionId) {
+        return store.mutate(roomId, room -> {
+            room.requireGm(actor);
+            gameState(room, sessionId, WhoAmIState.Phase.REVEAL);
+            room.requireMinimumActivePlayers();
+            return room.withSession(new GameSession(UUID.randomUUID(),
+                    new WhoAmIState(room.players().stream().map(Player::id).toList())));
+        });
+    }
+
+    public Room backToRoom(String roomId, PlayerIdentity actor, UUID sessionId) {
+        return store.mutate(roomId, room -> {
+            room.requireGm(actor);
+            if (!gameState(room, sessionId).canBackToRoom())
+                throw new DomainException(DomainException.Code.INVALID_GAME_PHASE);
+            return room.withoutSession();
+        });
+    }
+
+    /** Authorize and remove under the existing room lock; null session means the observed Lobby. */
+    public void closeRoom(String roomId, PlayerIdentity actor, UUID expectedSessionId) {
+        store.inRoom(roomId, room -> {
+            room.requireGm(actor);
+            if (!Objects.equals(room.currentSession().map(GameSession::id).orElse(null), expectedSessionId))
+                throw new DomainException(DomainException.Code.STALE_COMMAND);
+            store.remove(roomId);
+            return null;
+        });
     }
 }
