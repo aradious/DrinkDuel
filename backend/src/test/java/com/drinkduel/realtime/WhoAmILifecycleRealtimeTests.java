@@ -19,7 +19,7 @@ class WhoAmILifecycleRealtimeTests {
     Peer gm, guest;
     record Peer(RoomRealtime.Connection connection, RoomRealtimeTests.Client client) {}
     String id() { return UUID.randomUUID().toString(); }
-    Peer peer(PlayerIdentity.Google owner) {
+    Peer peer(PlayerIdentity.Owner owner) {
         var client = new RoomRealtimeTests.Client();
         return new Peer(realtime.open(client, owner), client);
     }
@@ -48,24 +48,26 @@ class WhoAmILifecycleRealtimeTests {
     }
     void send(Peer peer, RoomProtocol.Command command) { realtime.command(peer.connection, command); }
     void run(String type) { send(gm, command(type)); assertTrue(gm.client.result().accepted(), gm.client.result().code()); }
-    void reveal() { run("GM_END_GAME"); run("GM_CONTINUE_REVEAL"); }
+    void reveal() {
+        run("GM_END_GAME");
+        if (state().phase() == WhoAmIState.Phase.ROAST) run("GM_CONTINUE_REVEAL");
+    }
     String wire(Object value) { return new JsonMapper().writeValueAsString(value); }
     void safe(RoomProtocol.Snapshot snapshot) {
         String json = wire(snapshot);
-        for (String forbidden : List.of(token.value(), token.identity().fingerprint(), room.owner().subject(),
+        for (String forbidden : List.of(token.value(), token.identity().fingerprint(), ((PlayerIdentity.Google) room.owner()).subject(),
                 "submitterPlayerId", "submitterNickname", "statusVersion", "fingerprint", "expectedSubmissionId"))
             assertFalse(json.contains(forbidden), forbidden);
         for (var submission : state().submissions().values()) assertFalse(json.contains(submission.id().toString()));
     }
     @Test void transitionsBroadcastRoastThenRevealToAllWithOnlyApprovedInformation() {
-        service.giveUp(room.id(), token.identity(), session());
+        service.markGotIt(room.id(), room.owner(), session(), player());
         run("GM_END_GAME");
         for (var p : List.of(gm, guest)) {
             var view = p.client.state();
             assertEquals("ROAST", view.game().phase());
             assertEquals("LAST_ONE", view.game().roast().kind());
             assertEquals(List.of(room.gmPlayerId()), view.game().roast().playingPlayerIds());
-            assertEquals(List.of(player()), view.game().roast().gaveUpPlayerIds());
             assertTrue(view.game().cards().isEmpty());
             assertTrue(view.game().reveal().isEmpty());
             assertFalse(wire(view).contains("SECRET-FROM"));
@@ -107,6 +109,7 @@ class WhoAmILifecycleRealtimeTests {
         assertSame(before, current());
     }
     @Test void repeatedAndStaleCommandsCannotReplayAcrossRoundsOrLobby() {
+        service.markGotIt(room.id(), room.owner(), session(), player());
         var end = command("GM_END_GAME"); send(gm, end);
         var roast = current(); send(gm, end); assertSame(roast, current());
         var next = command("GM_CONTINUE_REVEAL"); send(gm, next);
@@ -164,7 +167,8 @@ class WhoAmILifecycleRealtimeTests {
     }
     @ParameterizedTest @ValueSource(strings = {"ROAST", "REVEAL"})
     void reconnectRestoresWaitingPhaseAndGmActions(String phase) {
-        run("GM_END_GAME"); if (phase.equals("REVEAL")) run("GM_CONTINUE_REVEAL");
+        if (phase.equals("ROAST")) service.markGotIt(room.id(), room.owner(), session(), player());
+        run("GM_END_GAME");
         var before = state(); realtime.disconnected(gm.connection);
         assertEquals(phase, guest.client.state().game().phase());
         assertEquals(List.of("GET_STATE"), guest.client.state().allowedActions());
@@ -181,9 +185,9 @@ class WhoAmILifecycleRealtimeTests {
     @ParameterizedTest @ValueSource(strings = {"LOBBY", "SUBMIT_NAME", "PLAYING", "ROAST", "REVEAL"})
     void closeRoomSendsTerminalAndCannotBeRejoined(String phase) {
         if (!phase.equals("PLAYING")) {
+            if (phase.equals("ROAST")) service.markGotIt(room.id(), room.owner(), session(), player());
             run("GM_END_GAME");
             if (!phase.equals("ROAST")) {
-                run("GM_CONTINUE_REVEAL");
                 if (phase.equals("LOBBY")) run("GM_BACK_TO_ROOM");
                 if (phase.equals("SUBMIT_NAME")) run("GM_PLAY_AGAIN");
             }

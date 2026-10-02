@@ -19,7 +19,7 @@ class WhoAmIShuffleRealtimeTests {
     final JsonMapper json = new JsonMapper();
 
     record Peer(RoomRealtime.Connection connection, RoomRealtimeTests.Client client) {}
-    Peer peer(PlayerIdentity.Google owner) {
+    Peer peer(PlayerIdentity.Owner owner) {
         var client = new RoomRealtimeTests.Client();
         return new Peer(realtime.open(client, owner), client);
     }
@@ -60,7 +60,7 @@ class WhoAmIShuffleRealtimeTests {
         for (var message : peer.client.messages) {
             String wire = json.writeValueAsString(message);
             assertFalse(wire.contains(own), "Own assigned secret leaked");
-            for (String forbidden : List.of(token.value(), token.identity().fingerprint(), room.owner().subject(),
+            for (String forbidden : List.of(token.value(), token.identity().fingerprint(), ((PlayerIdentity.Google) room.owner()).subject(),
                     "submitterNickname", "submitterPlayerId", "resetSubmissionId", "submissionId", "Created by"))
                 assertFalse(wire.contains(forbidden), "Forbidden metadata leaked: " + forbidden);
             for (var submission : state().submissions().values())

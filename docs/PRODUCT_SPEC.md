@@ -29,7 +29,7 @@ In the future, the GM can change games while keeping the same room and players.
 ### Game Master (GM)
 
 - GM is also a player.
-- GM authenticates with Google.
+- GM uses a backend-issued anonymous Host identity stored in a secure browser session.
 - GM creates and controls the room.
 - GM follows the same game-information rules as normal players.
 - GM must NOT see secret submitted names before Shuffle.
@@ -50,7 +50,6 @@ In the future, the GM can change games while keeping the same room and players.
 - Receives a random avatar automatically.
 - Can reconnect using the same local guest identity.
 - Can voluntarily Leave Room only in the Lobby.
-- Can Give Up during Who Am I.
 - Cannot control room/game progression.
 
 ## ROOM
@@ -137,7 +136,7 @@ When GM chooses Back to Room and everyone returns to the Lobby, Leave Room becom
 
 ## GM DISCONNECT
 
-If GM closes the browser/app, loses connection, or temporarily leaves, treat this as disconnection. Preserve the Room and GM ownership, and allow the same authenticated Google identity to reconnect and resume control. This does not transfer ownership or permanently close the Room.
+If GM closes the browser/app, loses connection, or temporarily leaves, treat this as disconnection. Preserve the Room and GM ownership, and allow the same authenticated Host session to reconnect and resume control. This does not transfer ownership or permanently close the Room.
 
 If GM disconnects:
 - Do not end the game.
@@ -147,14 +146,13 @@ If GM disconnects:
 - Other players remain in the current game phase; permitted player-owned actions may continue.
 - Show a friendly animated message such as "Waiting for Game Master... 🍺".
 - The original GM can return to the room.
-- GM identity must be verified using the same authenticated Google identity.
+- GM identity must be verified using the same backend-issued Host session.
 - Room ID alone must NOT grant GM privileges.
 
 Player-owned actions that do not require GM authority may continue. Players may still:
 
 - Submit and confirm their own secret name.
 - View/edit their local My Clues.
-- Give Up during active gameplay.
 - View player cards and scroll.
 - Search and filter players.
 
@@ -164,7 +162,7 @@ GM-controlled actions are unavailable until the GM reconnects:
 - Kick Player
 - Shuffle
 - Mark Got It
-- Reset Got It / Give Up status
+- Reset Got It status
 - End Game
 - Continue from Roast to Reveal
 - Choose the next action after Reveal
@@ -210,6 +208,14 @@ Room retains:
 Game Session contains temporary game-specific state.
 
 When starting another round/game, the Room remains.
+
+The Lobby is the Room membership and management screen. It contains the Room Code, QR code,
+players, avatars, connection state, and the permitted Kick, Leave, Close Room, and Choose Game
+controls. It does not contain game-specific setup or gameplay state.
+
+Choose Game is a separate game-catalog screen for the current Room. Only the GM selects a game
+in V1. Normal Players wait for the GM. Selecting Who Am I creates its Game Session and begins the
+Submit Name phase; it does not create a new Room or replace Room membership.
 
 ## WHO AM I — START
 
@@ -342,7 +348,6 @@ Provide filters:
 - All
 - Playing
 - Got It
-- Give Up
 
 Do not automatically reorder cards when a player's status changes.
 Filtering changes visibility, not the underlying display order.
@@ -373,38 +378,18 @@ Afterward the player's card clearly shows Got It.
 
 Before End Game, GM can correct/undo an accidental Got It by resetting that player's status to PLAYING.
 
-## GIVE UP
-
-A player who is PLAYING may choose Give Up for themselves.
-
-Give Up requires confirmation.
-
-After Give Up:
-- player is no longer considered actively Playing
-- do NOT reveal their secret name immediately
-- other players can see that the player has Given Up
-- their secret remains hidden from that player until the round reveal
-
-Before End Game, GM can undo/reset Give Up by resetting that player's status to PLAYING.
-
 Player gameplay states are conceptually:
 
 PLAYING
 GOT_IT
-GAVE_UP
 
 ### Result Transitions
-
-GOT_IT and GAVE_UP are mutually exclusive.
 
 Valid direct result transitions:
 
 - PLAYING -> GOT_IT
-- PLAYING -> GAVE_UP
 
-Do not directly transition GOT_IT -> GAVE_UP or GAVE_UP -> GOT_IT.
-
-To correct a mistake before End Game, GM resets GOT_IT or GAVE_UP back to PLAYING. A new result may then be applied through the normal action and permissions.
+To correct a mistake before End Game, GM resets GOT_IT back to PLAYING. A new result may then be applied through the normal action and permissions.
 
 ## MY CLUES
 
@@ -453,11 +438,7 @@ At End Game, derive the presentation from the final round state using this prior
 1. If one or more players remain PLAYING, roast them first.
    - If exactly one remains PLAYING, highlight them with a "Last One" style presentation, playful teasing, and a cute/funny character.
    - If more than one remains PLAYING, present them together. Do not falsely choose a single last player.
-2. If GAVE_UP players also exist, they may be teased as a separate group in the same Roast experience.
-   - A playful "quitters" style joke is allowed.
-   - Keep the presentation cute, funny, playful, and friendly rather than hostile.
-3. If no players remain PLAYING but one or more players GAVE_UP, focus the Roast presentation on the GAVE_UP group.
-4. If every player is GOT_IT, show a group success celebration instead of a Roast. This presentation follows the same GM-controlled continuation to Reveal; it does not auto-dismiss.
+2. If every player is GOT_IT, show a group success celebration instead of a Roast. This presentation follows the same GM-controlled continuation to Reveal; it does not auto-dismiss.
 
 No scores or rankings are created from these presentations.
 
@@ -524,7 +505,7 @@ Available concepts:
 - Clear submitted names.
 - Clear assignments.
 - Clear temporary submitter attribution data.
-- Clear Got It / Give Up states.
+- Clear Got It states.
 - Clear local My Clues.
 - Every remaining player must submit a NEW secret name.
 - Start a fresh Who Am I round by entering Submit Name immediately, subject to the minimum-player check for starting a Game Session.
@@ -540,16 +521,15 @@ Leave Room becomes available again for normal Players only; GM uses Close Room t
 
 GM can manage the group before starting another game/round.
 
-### Change Game
+### Choose Another Game
 
-The architecture must support this concept.
+- Keep the same Room, Room Code, GM, players, nicknames, and avatars.
+- Finish and remove the current Game Session.
+- Navigate to the separate Choose Game catalog.
+- Allow the GM to select a game again.
 
-V1 only has Who Am I, so additional games are not implemented yet.
-The UI may omit this action or indicate Coming Soon.
-
-Future behavior:
-- keep the Room and players
-- start a different Game Session
+V1 contains only Who Am I, but this action remains distinct from Play Again and Back to Room so
+future games can be added without redesigning the Lobby.
 
 ### Close Room
 

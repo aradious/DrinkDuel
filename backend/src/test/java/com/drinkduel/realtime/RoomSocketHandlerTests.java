@@ -53,7 +53,7 @@ class RoomSocketHandlerTests {
         send(trusted, "RESUME_ROOM", null, null);
         assertTrue(trusted.next().get("room").get("isGm").asBoolean());
         assertTrue(trusted.next().get("accepted").asBoolean());
-        var untrusted = socket(() -> room.owner().subject());
+        var untrusted = socket(() -> ((PlayerIdentity.Google) room.owner()).subject());
         send(untrusted, "RESUME_ROOM", null, null);
         assertEquals("NOT_AUTHORIZED", untrusted.next().get("code").asString());
     }

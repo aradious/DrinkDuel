@@ -150,7 +150,7 @@ Waiting imagery should feel alive without obscuring progress or permitted action
 - “Someone's still getting a drink...”
 - “Almost ready to cause trouble...”
 
-Use context-appropriate copy and keep it stable long enough to read; do not rapidly cycle messages. When GM disconnects, the waiting indication must not block player-owned submission, Give Up, My Clues, search, filtering, or viewing that remains permitted in the current phase.
+Use context-appropriate copy and keep it stable long enough to read; do not rapidly cycle messages. When GM disconnects, the waiting indication must not block player-owned submission, My Clues, search, filtering, or viewing that remains permitted in the current phase.
 
 ## Player Cards
 
@@ -160,13 +160,13 @@ For another player's gameplay card, make the assigned secret name the most promi
 
 The current user's card clearly shows YOU and ???, alongside avatar and nickname. Never expose their assigned secret or submitted-by attribution in visible text, accessibility labels, image descriptions, tooltips, or hidden markup. Use only authorized data received from the backend.
 
-During active gameplay, do not show Submitted By on any card. Got It and Give Up never reveal the user's own answer. Distinguish Playing, Got It, and Give Up with readable labels and icons plus restrained color; avoid fading a completed card until its contents become unreadable.
+During active gameplay, do not show Submitted By on any card. Got It never reveals the user's own answer. Distinguish Playing and Got It with readable labels and icons plus restrained color; avoid fading a completed card until its contents become unreadable.
 
 Do not reorder cards when statuses change. Search and filters change visibility only. Do not add turn controls, timers, scores, or rankings.
 
 ## Search and Filter
 
-Provide nickname search and the filters All, Playing, Got It, and Give Up. These are available for gameplay, including small rooms; keep them compact for phones and especially useful in large rooms.
+Provide nickname search and filters for players who are still Playing and those who Got It. These are available for gameplay, including small rooms; keep them compact for phones and especially useful in large rooms.
 
 Search may expand from an accessible, labeled search icon. Keep the selected filter obvious with text/shape as well as color. Controls must remain usable with long labels or enlarged text. An empty filtered view should explain that no players match rather than suggesting the room is empty.
 
@@ -191,9 +191,7 @@ After GM confirms End Game, show the dedicated Roast experience on every device 
 Follow the authoritative final-state priority:
 
 1. If any players remain Playing, feature them first: “LAST ONE!” for exactly one, or a group presentation for multiple players.
-2. Give Up players may appear as a separate friendly teasing group in the same experience.
-3. If no one remains Playing and some Gave Up, focus on that group.
-4. If everyone Got It, use a group success celebration instead.
+2. If everyone Got It, use a group success celebration instead.
 
 Do not invent a last player, ranking, penalty, or score. Keep answers and attribution hidden until Reveal. The entire Roast/group-success phase remains until GM continues; it is not the auto-dismiss Got It celebration.
 
@@ -220,8 +218,8 @@ Play Again immediately begins Submit Name with the same avatars and no new joins
 GM controls should be recognizable but not dominate the game. Show only controls permitted in the current phase: Got It, Reset status, Reset Submission, Kick, Shuffle, End Game, Reveal answers, Play Again, Back to Room, and Close Room.
 
 - GM may mark themselves Got It but cannot kick themselves or voluntarily Leave Room.
-- A result correction returns the player to Playing before another result is applied; do not suggest direct Got It/Give Up switching.
-- Confirm submission, Give Up, End Game, and Close Room as required by Product. Do not add mandatory confirmation flows to other actions without a product requirement.
+- A result correction returns the player from Got It to Playing before another result is applied.
+- Confirm submission, End Game, and Close Room as required by Product. Do not add mandatory confirmation flows to other actions without a product requirement.
 - Keep Close Room visually separate from primary game actions so it is not an easy accidental tap.
 - Disabled actions should have a short explanation, such as waiting for submissions or needing another player.
 - If fewer than 2 players remain before Shuffle, GM can Back to Room or Close Room. Do not display an enabled Shuffle control.

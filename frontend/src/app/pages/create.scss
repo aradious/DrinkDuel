@@ -1,0 +1,204 @@
+:host {
+  display: block;
+  isolation: isolate;
+  color: #fff5e5;
+  font-family: ui-rounded, 'Trebuchet MS', 'Segoe UI', sans-serif;
+}
+:host::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: #291528 url('/assets/drinkduel/backgrounds/cafe-create-room.webp') center / cover;
+  pointer-events: none;
+}
+.create-page {
+  max-width: 1120px;
+  margin: auto;
+}
+:host .back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin: 0 0 16px;
+  padding: 10px 18px;
+  color: #fff2e1;
+  background: #281535f5;
+  border: 1px solid #a58aa6;
+  border-radius: 16px;
+  box-shadow:
+    inset 0 1px 0 #fff2,
+    0 3px 0 #140c20;
+}
+:host .back:hover {
+  background: #44234f;
+}
+.back:active {
+  transform: translateY(2px);
+}
+.create-layout {
+  display: grid;
+  gap: 22px;
+  align-items: center;
+}
+.visual-zone {
+  text-align: center;
+  min-width: 0;
+}
+.brand {
+  display: block;
+  width: 210px;
+  max-width: 75%;
+  height: auto;
+  margin: 0 auto 12px;
+}
+h1 {
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.13;
+  letter-spacing: -1px;
+  margin: 0;
+  text-shadow:
+    0 2px 5px #1c0a20,
+    0 0 16px #1c0a20;
+}
+.mascot {
+  display: block;
+  width: 180px;
+  max-width: 100%;
+  height: auto;
+  margin: 12px auto -8px;
+  filter: drop-shadow(0 12px 14px #17092080);
+}
+.create-panel {
+  min-width: 0;
+  width: 100%;
+  max-width: 480px;
+  margin: auto;
+  padding: 26px 22px 30px;
+  border-radius: 28px;
+  border: 1px solid #bd8ea4;
+  background: linear-gradient(145deg, #392033f7, #22112df7);
+  box-shadow:
+    inset 0 1px 0 #ffe8be30,
+    0 6px 0 #190e23,
+    0 20px 36px #14091d66;
+}
+.intro {
+  font-size: 21px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+:host .support {
+  color: #d7c4d5;
+  font-size: 13px;
+  line-height: 1.55;
+  margin-bottom: 22px;
+}
+:host .chip {
+  font-size: 11px;
+  padding: 4px 9px;
+  margin: 0 0 6px;
+  color: #f1d9ff;
+  background: #5a3667;
+  border: 0;
+}
+:host label {
+  color: #fff2dd;
+  font-size: 16px;
+}
+:host input {
+  background: #fff2dc;
+  color: #382139;
+  border: 2px solid #b897a0;
+  border-radius: 14px;
+  min-height: 58px;
+  box-shadow: inset 0 3px 5px #49256520;
+}
+:host input::placeholder {
+  color: #766476;
+}
+:host input:focus {
+  border-color: #ffce71;
+}
+:host input[aria-invalid='true'] {
+  border-color: #ff9cba;
+}
+:host .field-error {
+  color: #ffb5cd;
+}
+:host :focus-visible {
+  outline: 3px solid #ffdd8b;
+  outline-offset: 4px;
+}
+:host .create-action {
+  display: flex;
+  gap: 14px;
+  min-height: 64px;
+  margin-bottom: 8px;
+  padding: 12px 16px;
+  border-radius: 22px;
+  border: 3px solid #ffe7a1;
+  font-size: 18px;
+  font-weight: 800;
+  color: #48240e;
+  background: linear-gradient(#fff0ac 0%, #ffd567 18%, #ffba39 48%, #ffad22 49%, #ef9324 100%);
+  box-shadow:
+    inset 0 3px 0 #fff9,
+    inset 0 -4px 0 #c3643070,
+    0 0 0 2px #44221e,
+    0 6px 0 2px #763115,
+    0 12px 18px #12081b80;
+}
+.create-action svg {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+:host .create-action:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow:
+    inset 0 2px 4px #0003,
+    0 2px 0 #763115;
+}
+:host .create-action:disabled {
+  color: #c8b5c5;
+  background: #57445c;
+  border-color: #806982;
+  box-shadow: none;
+}
+@media (min-width: 760px) {
+  .create-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 28px;
+    min-height: calc(100svh - 220px);
+  }
+  .brand {
+    width: 270px;
+  }
+  .mascot {
+    width: 100%;
+    max-width: 520px;
+    margin-top: 24px;
+  }
+  .create-panel {
+    padding: 32px 28px;
+  }
+}
+@media (min-width: 1024px) {
+  .mascot {
+    transform: translateY(-16px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :host .back:active,
+  :host .create-action:hover,
+  :host .create-action:active:not(:disabled) {
+    transform: none;
+  }
+}

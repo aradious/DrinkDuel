@@ -1,0 +1,25 @@
+:host { display: block; min-width: 0; }
+.roast-page { width: min(100%, 1120px); margin: 0 auto; color: #fff; }
+.roast-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 18px; padding: 15px 20px; border: 1px solid rgb(255 221 244 / .38); border-radius: 26px; background: linear-gradient(120deg,rgb(43 14 57 / .96),rgb(76 24 78 / .86)); box-shadow: 0 12px 36px rgb(18 4 29 / .4); }
+.roast-header img { width: min(42vw, 280px); height: auto; }
+.room-context { display: flex; align-items: center; gap: 8px; padding: 9px 13px; border: 1px solid rgb(255 255 255 / .2); border-radius: 14px; background: rgb(25 7 37 / .58); }
+.room-context span { color: #ffd875; font-size: 9px; font-weight: 900; letter-spacing: 1.3px; }
+.room-context strong { font-size: 15px; letter-spacing: 1.4px; }
+.roast-stage { position: relative; display: grid; min-height: min(690px, calc(100dvh - 230px)); padding: clamp(22px,4vw,48px); place-items: center; align-content: center; overflow: hidden; text-align: center; border: 1px solid rgb(255 221 244 / .42); border-radius: 32px; background: radial-gradient(circle at 50% 38%,rgb(181 80 217 / .3),transparent 36%),linear-gradient(145deg,rgb(58 20 70 / .97),rgb(29 10 43 / .97)); box-shadow: 0 8px 0 rgb(20 4 31 / .42),0 25px 58px rgb(20 4 31 / .46); }
+.eyebrow { position: relative; z-index: 2; margin-bottom: 13px; color: #ffd66f; letter-spacing: 2.2px; }
+.hero-card { position: relative; z-index: 2; display: grid; width: min(100%, 640px); padding: clamp(24px,4vw,40px); justify-items: center; border: 2px solid #ffd783; border-radius: 34px; background: radial-gradient(circle at 50% 0,rgb(255 255 255 / .15),transparent 35%),linear-gradient(145deg,#6e2c7d,#351340); box-shadow: 0 8px 0 #1c0826,0 0 42px rgb(222 94 255 / .22),inset 0 1px 0 rgb(255 255 255 / .22); animation: hero-float 4s ease-in-out infinite; }
+.hero-card dd-avatar { width: clamp(140px,20vw,210px); height: clamp(152px,22vw,228px); filter: drop-shadow(0 12px 14px rgb(14 2 23 / .44)); }
+:host ::ng-deep .hero-card dd-avatar .avatar { width: 100%; height: 100%; border-radius: 34px; }
+.avatar-crown { position: absolute; z-index: 3; top: 12px; left: calc(50% + 50px); color: #ffd352; font-size: 38px; rotate: 12deg; text-shadow: 0 3px 0 #a74c14; }
+.last-chip { margin: 14px 0 8px; padding: 6px 11px; color: #4a174f; font-size: 10px; font-weight: 900; letter-spacing: 1.2px; border-radius: 12px; background: linear-gradient(#ffc74b,#ee921c); box-shadow: 0 3px 0 #93430d; }
+.hero-card h1 { max-width: 100%; margin: 0; color: #fff; font-size: clamp(34px,5vw,58px); line-height: 1.02; overflow-wrap: anywhere; text-shadow: 0 4px 0 rgb(37 5 46 / .6); }
+.roast-copy { margin: 13px 0 0; color: #f5dff6; font-size: clamp(15px,2vw,19px); line-height: 1.45; }
+.reveal-everyone { position: relative; z-index: 2; min-width: min(100%, 300px); min-height: 58px; margin-top: 24px; color: #45230d; border: 2px solid #ffe39a; border-radius: 17px; background: linear-gradient(#ffc94d,#ed901b); box-shadow: 0 5px 0 #9a490d,inset 0 2px 0 rgb(255 255 255 / .44); }
+.waiting { position: relative; z-index: 2; margin: 24px 0 0; padding: 13px 18px; color: #f4e6f5; border: 1px solid rgb(255 255 255 / .16); border-radius: 15px; background: rgb(255 255 255 / .08); }
+.sparkles i { position: absolute; z-index: 1; color: #ffd260; font-style: normal; font-size: clamp(18px,3vw,34px); opacity: .82; animation: sparkle 3.2s ease-in-out infinite; }
+.sparkles i:nth-child(1){top:14%;left:12%}.sparkles i:nth-child(2){top:28%;right:11%;color:#ff8dce;animation-delay:.5s}.sparkles i:nth-child(3){bottom:22%;left:16%;animation-delay:1s}.sparkles i:nth-child(4){bottom:13%;right:16%;color:#d79aff;animation-delay:1.5s}.sparkles i:nth-child(5){top:10%;right:28%;animation-delay:2s}
+.roast-unavailable { padding: 30px; text-align: center; color: #fff; }
+@keyframes hero-float { 50% { transform: translateY(-5px) rotate(.2deg); } }
+@keyframes sparkle { 50% { transform: translateY(-8px) rotate(12deg) scale(1.12); opacity: 1; } }
+@media (max-width: 600px) { .roast-header { padding: 12px 14px; } .roast-header img { width: 200px; } .roast-stage { min-height: calc(100dvh - 200px); padding: 20px 14px; border-radius: 25px; } .hero-card { padding: 24px 16px; border-radius: 27px; } .hero-card dd-avatar { width: 132px; height: 144px; } .avatar-crown { left: calc(50% + 35px); font-size: 32px; } .reveal-everyone { width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .hero-card,.sparkles i { animation: none; } }

@@ -12,12 +12,11 @@ import static com.drinkduel.room.DomainException.Code.*;
 /** Immutable round state; secret-bearing data stays inside the server. */
 public final class WhoAmIState implements GameState {
     public enum Phase { SUBMIT_NAME, PLAYING, ROAST, REVEAL }
-    public enum PlayerGameStatus { PLAYING, GOT_IT, GAVE_UP }
-    public enum RoastKind { LAST_ONE, PLAYING_GROUP, GAVE_UP_GROUP, GROUP_SUCCESS }
-    public record RoastSummary(RoastKind kind, List<UUID> playingPlayerIds, List<UUID> gaveUpPlayerIds) {
+    public enum PlayerGameStatus { PLAYING, GOT_IT }
+    public enum RoastKind { LAST_ONE, PLAYING_GROUP, GROUP_SUCCESS }
+    public record RoastSummary(RoastKind kind, List<UUID> playingPlayerIds) {
         public RoastSummary {
             playingPlayerIds = List.copyOf(playingPlayerIds);
-            gaveUpPlayerIds = List.copyOf(gaveUpPlayerIds);
         }
     }
     public record PlayerResult(PlayerGameStatus status, long version) {
@@ -119,10 +118,6 @@ public final class WhoAmIState implements GameState {
         return finish(playerId, PlayerGameStatus.GOT_IT);
     }
 
-    public WhoAmIState giveUp(UUID playerId) {
-        return finish(playerId, PlayerGameStatus.GAVE_UP);
-    }
-
     private WhoAmIState finish(UUID playerId, PlayerGameStatus status) {
         PlayerResult result = playingResult(playerId);
         if (result.status() != PlayerGameStatus.PLAYING) throw new DomainException(INVALID_TRANSITION);
@@ -154,7 +149,11 @@ public final class WhoAmIState implements GameState {
 
     public WhoAmIState endGame() {
         if (phase != Phase.PLAYING) throw new DomainException(INVALID_GAME_PHASE);
-        return new WhoAmIState(participantIds, submissions, assignments, Phase.ROAST, results);
+        long playingCount = results.values().stream()
+                .filter(result -> result.status() == PlayerGameStatus.PLAYING)
+                .count();
+        Phase nextPhase = playingCount == 1 ? Phase.ROAST : Phase.REVEAL;
+        return new WhoAmIState(participantIds, submissions, assignments, nextPhase, results);
     }
 
     public WhoAmIState continueReveal() {
@@ -166,10 +165,9 @@ public final class WhoAmIState implements GameState {
     public RoastSummary roastSummary() {
         if (phase != Phase.ROAST && phase != Phase.REVEAL) throw new DomainException(INVALID_GAME_PHASE);
         var playing = participantIds.stream().filter(id -> results.get(id).status() == PlayerGameStatus.PLAYING).toList();
-        var gaveUp = participantIds.stream().filter(id -> results.get(id).status() == PlayerGameStatus.GAVE_UP).toList();
         var kind = playing.size() == 1 ? RoastKind.LAST_ONE : !playing.isEmpty() ? RoastKind.PLAYING_GROUP
-                : !gaveUp.isEmpty() ? RoastKind.GAVE_UP_GROUP : RoastKind.GROUP_SUCCESS;
-        return new RoastSummary(kind, playing, gaveUp);
+                : RoastKind.GROUP_SUCCESS;
+        return new RoastSummary(kind, playing);
     }
 
     public boolean canBackToRoom() {

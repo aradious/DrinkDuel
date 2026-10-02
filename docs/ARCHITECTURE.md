@@ -31,7 +31,7 @@ Separate transport adapters, identity checks, room application service, game rul
 
 The room service handles membership, owner authorization, expiration, and session replacement. A Who Am I rules component handles submissions, assignments, results, and its phases. A view projector creates outbound DTOs. Domain objects are never serialized directly.
 
-Keep network connections and transport buffers outside the domain aggregate. Do not perform network I/O or Google verification while holding a room mutation lock.
+Keep network connections and transport buffers outside the domain aggregate. Do not perform network I/O or identity verification while holding a room mutation lock.
 
 ## Domain Model
 
@@ -44,15 +44,15 @@ Room
 
 | Concept | Responsibility and minimum data |
 | --- | --- |
-| Room | Short public room ID; creation and fixed expiration instants; Google owner subject; GM player ID; ordered players; optional current session; monotonic revision; blocked guest-identity fingerprints. No Who Am I fields. |
-| Player | Stable internal player ID, nickname, avatar ID, identity binding, and derived connection state. The GM is also a Player. Identity binding is a guest credential fingerprint or an authenticated Google subject, not a nickname. |
+| Room | Short public room ID; creation and fixed expiration instants; verified owner identity; GM player ID; ordered players; optional current session; monotonic revision; blocked guest-identity fingerprints. No Who Am I fields. |
+| Player | Stable internal player ID, nickname, avatar ID, identity binding, and derived connection state. The GM is also a Player. Identity binding is a guest credential fingerprint or a server-issued Host identity, not a nickname. |
 | GameSession | Unique session/round ID, GameType, and game-specific GameState. A new round gets a new session ID. |
 | GameType | V1 value WHO_AM_I; identifies which rules and view projector handle the session. No additional playable games in V1. |
 | GameState | A small game-state contract/tag, not a universal model of every game's phases or fields. |
 | WhoAmIState | Phase, ordered participant IDs, submissions, assignments, result statuses, and final Roast summary when the round ends. |
 | SubmittedName | Value record containing submitter player ID and secret text. One confirmed submission per current participant. Identify by session and submitting player, never text; identical text from different players remains distinct. |
 | WhoAmIAssignment | Value record containing recipient player ID, assigned text, original submitter ID, and submitter nickname captured for round attribution. |
-| PlayerGameStatus | PLAYING, GOT_IT, or GAVE_UP. Separate from connection state and session phase. |
+| PlayerGameStatus | PLAYING or GOT_IT. Separate from connection state and session phase. |
 | RoomStore | Room creation, lookup, atomic mutation, and removal boundary. |
 | InMemoryRoomStore | V1 map and per-room synchronization implementation of RoomStore. |
 
@@ -67,6 +67,7 @@ A live Room with no currentSession is the Lobby. A Room with a currentSession de
 | State / transition | Authoritative behavior |
 | --- | --- |
 | Room created | Owner is also a player; no game session; Lobby is joinable up to 20 members. |
+| Choose Game | Frontend catalog within the current Room. It does not mutate Room or create a session until the GM selects a game. Normal Players have no selection authority. |
 | GM opens Who Am I | Validate at least 2 active players; create session in SUBMIT_NAME; capture current membership; close new joins. |
 | SUBMIT_NAME | Each participant confirms one secret. GM can reset submissions or kick. A disconnected session member blocks Shuffle. |
 | Shuffle | Atomic assignment operation requiring at least 2 active participants, valid submissions from all remaining participants, and no disconnected members. Commit directly to PLAYING. |
@@ -76,6 +77,7 @@ A live Room with no currentSession is the Lobby. A Room with a currentSession de
 | ROAST | Remain until GM continues, including the all-GOT_IT success presentation. No auto-dismiss. |
 | GM continues | Enter REVEAL and expose assignments and attribution. |
 | Play Again from Reveal | Validate the new-session minimum before mutation; replace the session with fresh SUBMIT_NAME state. Keep Room, players, avatars, ID, and QR. Clear previous round data and local clues through session-ID change. |
+| Choose Another Game | From Reveal, remove the current session using the same authoritative cleanup as Back to Room, preserve Room membership, then route the GM to Choose Game. V1 needs no separate change-game command because no second game is implemented. |
 | Back to Room | From Reveal, or the specified fewer-than-2 Submit Name recovery, remove the current session and return to Lobby. Joins and normal Players' voluntary Leave become available; GM has no Leave action. |
 | Close / expire | Remove Room and associated state; send terminal notification. These are terminal outcomes, not retained Room states. |
 
@@ -95,19 +97,19 @@ Guest credentials are presented through an authenticated attachment message over
 
 ### GM
 
-Conceptually use Google authentication through a backend-verified login flow and a secure HTTP session cookie. Validate the provider response and bind the session to the stable Google subject, not email, nickname, or a client-supplied role. OAuth configuration and implementation are deferred.
+For V1, create an anonymous Host identity on the backend and bind it to a secure HTTP session cookie. The browser cannot select the identity or GM role. The cookie is HttpOnly, SameSite=Strict, Secure by default outside local preview, and never placed in URLs, snapshots, or logs. Google authentication may replace this adapter later without changing Room or game rules.
 
-Room ownership stores that Google subject and the GM's player ID. An authenticated WebSocket handshake establishes the server-side principal. On every GM command, match the principal to Room ownership and current membership. Re-login with the same Google identity restores the original GM; a guest token or Room ID never grants GM authority. There is no transfer.
+Room ownership stores the verified Host identity and the GM's player ID. The HTTP session establishes the same server-side principal for room creation and the WebSocket handshake. On every GM command, match the principal to Room ownership and current membership. The same browser session restores the original GM; a guest token or Room ID never grants GM authority. There is no transfer.
 
 GM sees the same secret-information restrictions as other players. Administrative permission does not imply access to raw game state.
 
-GM has no voluntary Leave Room action, including in the Lobby. Reject LEAVE_ROOM from the owner on the server and omit it from their capabilities. To permanently end the Room, GM uses Close Room. Closing the browser/app, losing connection, or temporarily leaving changes presence only; preserve Room membership and ownership so the same authenticated Google identity can resume control. Fixed expiration still applies. No transfer is introduced.
+GM has no voluntary Leave Room action, including in the Lobby. Reject LEAVE_ROOM from the owner on the server and omit it from their capabilities. To permanently end the Room, GM uses Close Room. Closing the browser/app, losing connection, or temporarily leaving changes presence only; preserve Room membership and ownership so the same authenticated Host session can resume control. Fixed expiration still applies. No transfer is introduced.
 
 ### Connection Presence
 
 Maintain a transport registry of live connections bound to room/player IDs. A player is connected while at least one validated connection remains. Closing an old socket must not mark a newly reconnected player disconnected. Heartbeats and transport timeouts detect lost connections; these are infrastructure timeouts, not gameplay timers.
 
-When all GM connections disappear, show “Waiting for Game Master... 🍺”. Preserve state. Player submissions, Give Up in PLAYING, local clues, and permitted viewing continue. Only GM-controlled operations are unavailable. Expiration remains effective.
+When all GM connections disappear, show “Waiting for Game Master... 🍺”. Preserve state. Player submissions, local clues, and permitted viewing continue. Only GM-controlled operations are unavailable. Expiration remains effective.
 
 ## RoomStore and Expiration
 
@@ -144,7 +146,7 @@ Do not allow a command that held an old room reference to revive a deleted room.
 | Joins / nickname collision / last slot | Check uniqueness and capacity and insert the member in one operation. Disconnected members retain membership and count toward capacity. |
 | Simultaneous submissions | Each actor can fill only their own empty submission slot; reset and submit serialize. |
 | Shuffle racing with submit, kick, or disconnect | Evaluate all Shuffle conditions and create all assignments inside one operation. |
-| Got It racing with Give Up | First valid mutation wins. The second fails its PLAYING precondition; no direct GOT_IT/GAVE_UP conversion. |
+| Got It racing with End Game | The room mutation lock serializes both operations; the first committed operation determines the snapshot seen by every client. |
 | End Game racing with a result | First committed operation determines the final snapshot; result changes are rejected after PLAYING ends. |
 | Reconnect racing with kick | Check revoked membership under the room lock; kick also revokes every attached connection for that identity. |
 | Close/expiration racing with commands | A terminal room accepts no further changes. |
@@ -155,7 +157,7 @@ Keep a bounded, short-lived in-memory request-result cache per actor/room to sup
 
 ## WebSocket Transport and Synchronization
 
-Use native browser WebSocket with a small JSON protocol on Spring WebSocket. STOMP, SockJS, and an external broker are unnecessary for this single-server V1 design. HTTPS handles Google login and authenticated room creation; WSS handles room attachment and game commands.
+Use native browser WebSocket with a small JSON protocol on Spring WebSocket. STOMP, SockJS, and an external broker are unnecessary for this single-server V1 design. HTTPS establishes the Host session and creates rooms; WSS handles room attachment and game commands.
 
 A room channel is an internal registry of authorized connections, not a public topic carrying raw game state. Joining/resuming attaches a socket to one room and player. Attach plus initial personalized snapshot is coordinated with room mutations, so no update is lost between snapshot and subscription.
 
@@ -165,7 +167,7 @@ Clients replace their authoritative view with newer snapshots and ignore older r
 
 Use ordered per-connection outbound queues with bounded buffers. Slow connections are disconnected and recover by snapshot instead of blocking a room indefinitely. Spring's standard WebSocket sessions require serialized sending; the implementation may use its [ConcurrentWebSocketSessionDecorator](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/socket/handler/ConcurrentWebSocketSessionDecorator.html) alongside ordered enqueueing.
 
-On connection loss, keep a read-only last snapshot for presentation, mark the connection unavailable, and reconnect with bounded backoff. Revalidate identity, membership, room lifetime, and session on attach. Return a fresh snapshot, including the current phase, rather than replaying old celebrations. GM reconnect uses the authenticated Google principal. A kicked guest is rejected even if their browser retained a previous snapshot.
+On connection loss, keep a read-only last snapshot for presentation, mark the connection unavailable, and reconnect with bounded backoff. Revalidate identity, membership, room lifetime, and session on attach. Return a fresh snapshot, including the current phase, rather than replaying old celebrations. GM reconnect uses the authenticated Host principal. A kicked guest is rejected even if their browser retained a previous snapshot.
 
 ## Minimum V1 Command and Message Model
 
@@ -175,7 +177,7 @@ Names below are protocol design, not implemented endpoints. Actor ID and role co
 
 | Command / operation | Preconditions and intent |
 | --- | --- |
-| CREATE_ROOM (HTTPS) | Google-authenticated owner; create room and GM player; no game starts yet. |
+| CREATE_ROOM (HTTPS) | Backend-authenticated Host session; create room and GM player; no game starts yet. |
 | JOIN_ROOM | New guest, Lobby only, unique nickname, capacity available, credential not blocked. |
 | RESUME_ROOM | Restore existing guest membership or authenticated GM; allowed in all live phases. |
 | GET_STATE | Authorized member requests their current personalized snapshot. |
@@ -185,16 +187,15 @@ Names below are protocol design, not implemented endpoints. Actor ID and role co
 | GM_RESET_SUBMISSION | SUBMIT_NAME; clear target submission and require confirmation again. |
 | GM_KICK_PLAYER | Remove non-GM target and revoke room access; apply phase-specific cleanup. |
 | GM_SHUFFLE | SUBMIT_NAME with all eligibility checks; assign and enter PLAYING atomically. |
-| GIVE_UP | Actor is PLAYING in active gameplay; client confirmation required. |
 | GM_MARK_GOT_IT | Target is PLAYING in active gameplay; GM may target themselves. |
-| GM_RESET_PLAYER_STATUS | Active gameplay, target GOT_IT or GAVE_UP; reset to PLAYING. |
+| GM_RESET_PLAYER_STATUS | Active gameplay, target GOT_IT; reset to PLAYING. |
 | GM_END_GAME | PLAYING; client confirmation required; freeze results and enter ROAST. |
 | GM_CONTINUE_REVEAL | ROAST; enter REVEAL. |
 | GM_PLAY_AGAIN | REVEAL; validate minimum, replace session, begin Submit Name. |
 | GM_BACK_TO_ROOM | REVEAL or fewer-than-2 Submit Name recovery; remove session. |
 | GM_CLOSE_ROOM | Live room, owner authority, client confirmation; terminal deletion. |
 
-My Clues, search, filtering, confirmation cancellation, and tapping to skip a celebration do not send domain commands. There is no V1 Change Game command for an unimplemented game.
+My Clues, search, filtering, confirmation cancellation, and tapping to skip a celebration do not send domain commands. In V1, Choose Another Game uses GM_BACK_TO_ROOM to remove the finished session, followed by frontend navigation to Choose Game. There is no separate change-game command until another game exists.
 
 ### Server to Client
 
@@ -220,7 +221,7 @@ Every outgoing snapshot is constructed for a verified recipient. Use allowlisted
 | Roast | Final result groups and presentation data. Do not expose the recipient's secret or assignment attribution before Reveal; a minimal result-only view is sufficient. |
 | Reveal | Remaining participants' assigned text and preserved original submitter nickname, including the recipient's assignment. |
 
-GOT_IT and GAVE_UP do not unlock the player's own secret. Redaction applies to every socket for that identity, reconnect snapshots, errors, debug outputs, and presentation cues. No all-secrets broadcast topic is exposed. Do not cache prior personalized snapshots across different authenticated identities.
+GOT_IT does not unlock the player's own secret. Redaction applies to every socket for that identity, reconnect snapshots, errors, debug outputs, and presentation cues. No all-secrets broadcast topic is exposed. Do not cache prior personalized snapshots across different authenticated identities.
 
 ## Who Am I Rules and Kick Data
 
@@ -230,7 +231,7 @@ Kick in Submit removes membership, participant entry, and submission, then recal
 
 Assignments capture the original submitter nickname so Reveal never depends on the submitter still being in Room.players. Delete this attribution with the old round on reset, Play Again, or return to Lobby; it is not persistent history. Keep the blocked guest fingerprint at room scope across rounds so Play Again cannot undo a kick.
 
-End Game derives Roast groups from final participant statuses: PLAYING first (single Last One or group), optionally a separate GAVE_UP group; GAVE_UP focus when none are PLAYING; group success when all are GOT_IT. No scores, rankings, statistics, or automatic end conditions are introduced.
+End Game counts final participant statuses: exactly one PLAYING participant enters the Last One Roast; zero or two or more PLAYING participants enter Reveal directly. No scores, rankings, statistics, or automatic end conditions are introduced.
 
 ## My Clues and Avatars
 
@@ -266,7 +267,7 @@ GM absence is normally a snapshot-derived waiting state, not a technical error. 
 
 ## Review Against the Product Specification
 
-The design covers Lobby-only joining/leaving, Google-owned GM reconnect, guest identity restoration, disconnected-player Shuffle blocking, owner-offline player actions, the minimum-player recovery, fixed 48-hour expiration, result corrections, Roast priority, delayed Reveal, retained kicked-submitter attribution, and round reset. Room remains game-independent. No game or UI code is part of this change.
+The design covers Lobby-only joining/leaving, Host-session GM reconnect, guest identity restoration, disconnected-player Shuffle blocking, owner-offline player actions, the minimum-player recovery, fixed 48-hour expiration, result corrections, Roast priority, delayed Reveal, retained kicked-submitter attribution, and round reset. Room remains game-independent.
 
 The confirmed GM exit and duplicate-submission rules are reflected in both specifications: GM has Close Room rather than voluntary Leave, temporary absence preserves ownership, and Shuffle excludes the recipient's own submission by owner identity while allowing identical text from others. No unresolved product decisions remain in the specified V1 flow.
 

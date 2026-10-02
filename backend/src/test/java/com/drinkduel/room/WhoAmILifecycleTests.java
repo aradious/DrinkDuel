@@ -34,32 +34,64 @@ class WhoAmILifecycleTests {
     UUID session() { return current().currentSession().orElseThrow().id(); }
     WhoAmIState state() { return (WhoAmIState) current().currentSession().orElseThrow().state(); }
     void end() { service.endGame(room.id(), room.owner(), session()); }
-    void reveal() { end(); service.continueReveal(room.id(), room.owner(), session()); }
+    void reveal() {
+        end();
+        if (state().phase() == ROAST) service.continueReveal(room.id(), room.owner(), session());
+    }
     void error(DomainException.Code code, org.junit.jupiter.api.function.Executable action) {
         assertEquals(code, assertThrows(DomainException.class, action).code());
     }
-    @ParameterizedTest @CsvSource({"0,0,PLAYING_GROUP,2,0", "1,0,LAST_ONE,1,0",
-            "0,1,LAST_ONE,1,1", "0,2,GAVE_UP_GROUP,0,2", "1,1,GAVE_UP_GROUP,0,1",
-            "2,0,GROUP_SUCCESS,0,0"})
-    void roastPriorityAndManualEnd(int got, int gave, String kind, int playing, int quitters) {
+    @ParameterizedTest @CsvSource({"0,REVEAL", "1,ROAST", "2,REVEAL"})
+    void endGameRoutesByAuthoritativePlayingCount(int got, String expectedPhase) {
         var ids = state().participantIds();
         for (int i = 0; i < got; i++) service.markGotIt(room.id(), room.owner(), session(), ids.get(i));
-        for (int i = got; i < got + gave; i++) service.giveUp(room.id(), current().players().get(i).identity(), session());
         assertEquals(PLAYING, state().phase());
         var results = state().results();
         end();
-        assertEquals(ROAST, state().phase());
+        assertEquals(expectedPhase, state().phase().name());
         assertEquals(results, state().results());
-        var roast = state().roastSummary();
-        assertEquals(kind, roast.kind().name());
-        assertEquals(playing, roast.playingPlayerIds().size());
-        assertEquals(quitters, roast.gaveUpPlayerIds().size());
-        error(INVALID_GAME_PHASE, () -> service.giveUp(room.id(), guest.identity(), session()));
+        if (state().phase() == ROAST) {
+            var roast = state().roastSummary();
+            assertEquals(WhoAmIState.RoastKind.LAST_ONE, roast.kind());
+            assertEquals(1, roast.playingPlayerIds().size());
+            assertEquals(ids.stream().filter(id -> state().results().get(id).status()
+                    == WhoAmIState.PlayerGameStatus.PLAYING).findFirst().orElseThrow(),
+                    roast.playingPlayerIds().getFirst());
+        }
         error(INVALID_GAME_PHASE, () -> service.markGotIt(room.id(), room.owner(), session(), player));
         error(INVALID_GAME_PHASE, () -> service.resetPlayerStatus(room.id(), room.owner(), session(), player, 0));
-        service.continueReveal(room.id(), room.owner(), session());
+        if (state().phase() == ROAST) service.continueReveal(room.id(), room.owner(), session());
         assertEquals(REVEAL, state().phase());
         assertEquals(results, state().results());
+    }
+    @Test void moreThanTwoPlayingRevealDirectlyWithAssignmentsAndAttributionIntact() {
+        var avatars = new AvatarCatalog();
+        var localStore = new InMemoryRoomStore(Clock.systemUTC(), avatars);
+        var localService = new RoomService(localStore, avatars);
+        var localRoom = localService.createRoom(new PlayerIdentity.Google("many-owner"), "GM");
+        var first = GuestToken.generate();
+        var second = GuestToken.generate();
+        localService.joinRoom(localRoom.id(), "First", first);
+        localService.joinRoom(localRoom.id(), "Second", second);
+        localService.startWhoAmI(localRoom.id(), localRoom.owner());
+        UUID round = localStore.find(localRoom.id()).orElseThrow().currentSession().orElseThrow().id();
+        localService.submitName(localRoom.id(), localRoom.owner(), round, "GM secret");
+        localService.submitName(localRoom.id(), first.identity(), round, "First secret");
+        localService.submitName(localRoom.id(), second.identity(), round, "Second secret");
+        localService.shuffle(localRoom.id(), localRoom.owner(), round);
+        var before = (WhoAmIState) localStore.find(localRoom.id()).orElseThrow()
+                .currentSession().orElseThrow().state();
+
+        localService.endGame(localRoom.id(), localRoom.owner(), round);
+
+        var revealed = (WhoAmIState) localStore.find(localRoom.id()).orElseThrow()
+                .currentSession().orElseThrow().state();
+        assertEquals(REVEAL, revealed.phase());
+        assertEquals(before.assignments(), revealed.assignments());
+        assertEquals(before.submissions(), revealed.submissions());
+        assertEquals(before.results(), revealed.results());
+        assertTrue(revealed.assignments().values().stream()
+                .allMatch(assignment -> !assignment.submission().submitterNickname().isBlank()));
     }
     @Test void allLifecycleActionsRequireConnectedGm() {
         UUID round = session();
@@ -82,6 +114,7 @@ class WhoAmILifecycleTests {
         error(INVALID_GAME_PHASE, () -> service.playAgain(room.id(), room.owner(), round));
         error(INVALID_GAME_PHASE, () -> service.backToRoom(room.id(), room.owner(), round));
         error(STALE_COMMAND, () -> service.endGame(room.id(), room.owner(), UUID.randomUUID()));
+        service.markGotIt(room.id(), room.owner(), round, player);
         end();
         error(INVALID_GAME_PHASE, this::end);
         error(INVALID_GAME_PHASE, () -> service.backToRoom(room.id(), room.owner(), round));
@@ -151,8 +184,8 @@ class WhoAmILifecycleTests {
     }
     @ParameterizedTest @CsvSource({"ROAST", "REVEAL"})
     void kickPreservesOtherAssignmentAndCreatorDuringPostgame(String phase) {
+        if (phase.equals("ROAST")) service.markGotIt(room.id(), room.owner(), session(), player);
         end();
-        if (phase.equals("REVEAL")) service.continueReveal(room.id(), room.owner(), session());
         var assignment = state().assignments().get(room.gmPlayerId());
         var result = state().results().get(room.gmPlayerId());
         error(GAME_IN_PROGRESS, () -> service.leaveRoom(room.id(), guest.identity()));
@@ -165,8 +198,8 @@ class WhoAmILifecycleTests {
     }
     @ParameterizedTest @CsvSource({"ROAST", "REVEAL"})
     void gmReconnectPreservesPostgame(String phase) {
+        if (phase.equals("ROAST")) service.markGotIt(room.id(), room.owner(), session(), player);
         end();
-        if (phase.equals("REVEAL")) service.continueReveal(room.id(), room.owner(), session());
         var before = state();
         service.disconnectPlayer(room.id(), room.owner());
         error(NOT_AUTHORIZED, () -> service.continueReveal(room.id(), room.owner(), session()));
@@ -183,6 +216,7 @@ class WhoAmILifecycleTests {
         error(ROOM_NOT_FOUND, () -> service.joinRoom(room.id(), "New", GuestToken.generate()));
     }
     @Test void duplicateEndAndContinueEachAcceptExactlyOne() throws Exception {
+        service.markGotIt(room.id(), room.owner(), session(), player);
         AtomicInteger accepted = new AtomicInteger();
         together(() -> attempt(this::end, accepted, INVALID_GAME_PHASE), () -> attempt(this::end, accepted, INVALID_GAME_PHASE));
         assertEquals(1, accepted.get());
@@ -193,11 +227,11 @@ class WhoAmILifecycleTests {
         assertEquals(REVEAL, state().phase());
     }
     @Test void endRacingResultFreezesAnAtomicResult() throws Exception {
-        together(this::end, () -> attempt(() -> service.giveUp(room.id(), guest.identity(), session()), new AtomicInteger(), INVALID_GAME_PHASE));
-        assertEquals(ROAST, state().phase());
+        together(this::end, () -> attempt(() -> service.markGotIt(room.id(), room.owner(), session(), player), new AtomicInteger(), INVALID_GAME_PHASE));
+        assertTrue(state().phase() == ROAST || state().phase() == REVEAL);
         var r = state().results().get(player);
         assertTrue((r.status() == WhoAmIState.PlayerGameStatus.PLAYING && r.version() == 0)
-                || (r.status() == WhoAmIState.PlayerGameStatus.GAVE_UP && r.version() == 1));
+                || (r.status() == WhoAmIState.PlayerGameStatus.GOT_IT && r.version() == 1));
     }
     @Test void playAgainRacingBackToRoomCannotApplyBoth() throws Exception {
         reveal(); UUID old = session(); var accepted = new AtomicInteger();
@@ -214,6 +248,7 @@ class WhoAmILifecycleTests {
         if (store.find(room.id()).isPresent()) { assertNotEquals(old, session()); assertEquals(SUBMIT_NAME, state().phase()); }
     }
     @Test void kickRacingRevealKeepsAssignmentsCoherent() throws Exception {
+        service.markGotIt(room.id(), room.owner(), session(), player);
         end(); var assignment = state().assignments().get(room.gmPlayerId());
         together(() -> service.kickPlayer(room.id(), room.owner(), player),
                 () -> service.continueReveal(room.id(), room.owner(), session()));
@@ -224,7 +259,7 @@ class WhoAmILifecycleTests {
     @Test void disconnectRacingEndPreservesRoundAndOwnership() throws Exception {
         together(() -> service.disconnectPlayer(room.id(), room.owner()),
                 () -> attempt(this::end, new AtomicInteger(), NOT_AUTHORIZED));
-        assertTrue(state().phase() == PLAYING || state().phase() == ROAST);
+        assertTrue(state().phase() == PLAYING || state().phase() == REVEAL);
         var before = state();
         service.reconnectGm(room.id(), room.owner());
         assertSame(before, state());

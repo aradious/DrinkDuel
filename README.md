@@ -1,67 +1,100 @@
 # DrinkDuel
 
-Initial project skeleton only. No UI screens or game features are implemented.
+DrinkDuel is a mobile-first party game for 2–20 people. V1 includes the complete **Who Am I?** flow with realtime room synchronization, anonymous Host sessions, guest players, and server-authoritative game state.
 
-## Structure
+## Technology
+
+- Angular 22, standalone components, strict TypeScript, SCSS
+- Spring Boot 4.1.1, Java 21, Maven Wrapper
+- Native Spring WebSocket
+- In-memory rooms and Host sessions
+- No database, Redis, Docker, or runtime 3D engine
+
+## Repository
 
 ```text
-DrinkDuel/
-  frontend/    Angular standalone application with an empty router outlet
-  backend/     Spring Boot application and Maven Wrapper
-  docs/        Project scope and future visual direction
-  README.md
-  .gitignore
+frontend/   Angular application and static artwork
+backend/    Spring Boot API, WebSocket server, domain, and tests
+docs/       Product, architecture, design, and deployment specifications
+run-dev.bat Windows local-preview launcher
 ```
 
-## Toolchain
+The product rules live in [PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md). See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for the production topology, configuration, reverse-proxy example, limitations, and smoke test.
 
-- Angular and Angular CLI 22.2.0 (project-local CLI)
-- Spring Boot 4.1.1
-- JDK 21 (verified with Eclipse Temurin 21.0.12.1)
-- Node.js 24.21.0 and npm 11.19.0
-- Maven 3.9.16 via Maven Wrapper
+## Requirements
 
-## Frontend
+- JDK 21 (`JAVA_HOME` must point to it)
+- Node.js 24 and npm 11, matching the currently verified toolchain
+- No global Angular CLI or Maven installation is required
 
-From `frontend/`:
+## Local development
+
+Install frontend dependencies once:
 
 ```powershell
+cd frontend
 npm ci
+```
+
+On Windows, run `run-dev.bat` from the repository root. It starts:
+
+- Spring Boot on `127.0.0.1:8080` with the explicit `local-preview` profile
+- Angular on `127.0.0.1:4200`, proxying `/api` and `/ws` to Spring Boot
+
+The development identity endpoint is enabled only by that explicit profile plus its opt-in flag. It is unavailable in the normal production configuration.
+
+To run the processes separately:
+
+```powershell
+cd backend
+.\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=local-preview -Dspring-boot.run.arguments=--drinkduel.dev-identity.enabled=true
+```
+
+```powershell
+cd frontend
 npm start
 ```
 
-The development server uses `http://localhost:4200`. A blank page is expected: routing is configured, but there are no routes or UI screens yet.
+On macOS/Linux, use `./mvnw` in place of `mvnw.cmd`.
 
-Build for production with `npm run build`. Output is written to `frontend/dist/drinkduel/`.
-
-The application uses standalone components, SCSS, strict TypeScript and Angular template checks, and a mobile viewport. Future layouts should be mobile-first. Angular CLI analytics are disabled. No global Angular CLI installation is needed.
-
-## Backend
-
-Set `JAVA_HOME` to a JDK 21 installation. From `backend/`:
+## Tests and production builds
 
 ```powershell
-.\mvnw.cmd verify
-.\mvnw.cmd spring-boot:run
+cd frontend
+npm test
+npm run build
 ```
 
-On macOS/Linux, use `./mvnw` instead. The backend uses port 8080; Actuator health is available at `http://localhost:8080/actuator/health` while running.
+Serve the files in `frontend/dist/drinkduel/browser/` as the production web root.
 
-Dependencies include Spring Web, Spring WebSocket, Validation, and Actuator. A context-load test verifies application startup. There are no application controllers, WebSocket events, authentication, or game services. Future game state will live only in server memory. There is no database, JPA, Redis, or Docker.
+```powershell
+cd backend
+.\mvnw.cmd verify
+```
 
-## Windows certificate trust
+Run the executable backend artifact with:
 
-This environment required the Windows certificate store for dependency downloads. If certificate verification fails, set these variables in the current PowerShell session before the relevant commands:
+```powershell
+java -jar target/drinkduel-0.0.1-SNAPSHOT.jar
+```
+
+The resulting JAR is `backend/target/drinkduel-0.0.1-SNAPSHOT.jar`.
+
+## Production summary
+
+Use one public HTTPS origin. Serve Angular at `/`, proxy `/api/*` to Spring Boot, and proxy `/ws/*` with WebSocket Upgrade support. Frontend API calls are relative, WebSocket chooses `ws` or `wss` from the page origin, and QR links use the current public origin.
+
+Run exactly **one backend instance** for V1. Rooms and Host server sessions are held in memory. A backend restart loses active rooms and Host sessions, and independent backend replicas cannot share state. Rooms expire 48 hours after creation, but that lifetime does not provide persistence across restarts.
+
+Production Host cookies default to `Secure`, `HttpOnly`, and `SameSite=Strict`. Public HTTPS and correct forwarded headers are required. Do not activate the `local-preview` profile in production.
+
+## Certificate trust on Windows
+
+If this machine's dependency downloads require the Windows certificate store, set these only in the current shell:
 
 ```powershell
 $env:NODE_OPTIONS = "--use-system-ca"
 $env:MAVEN_OPTS = "-Djavax.net.ssl.trustStoreType=Windows-ROOT -Djavax.net.ssl.trustStore=NONE"
 ```
 
-These settings preserve TLS verification and do not change global configuration.
-
-## Scope
-
-See [project scope](docs/project-scope.md) for the future art-toy visual direction and deferred features. No runtime 3D rendering is allowed.
-
-Git is initialized at this project root. No remote or GitHub push is configured.
+These settings keep TLS verification enabled and do not change global configuration.

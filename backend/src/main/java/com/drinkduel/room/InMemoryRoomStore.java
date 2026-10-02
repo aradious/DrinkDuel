@@ -36,7 +36,7 @@ public final class InMemoryRoomStore implements RoomStore {
         this.random = Objects.requireNonNull(random);
     }
 
-    @Override public Room create(PlayerIdentity.Google verifiedOwner, String nickname) {
+    @Override public Room create(PlayerIdentity.Owner verifiedOwner, String nickname) {
         Player gm = Player.create(nickname, Objects.requireNonNull(verifiedOwner), avatars);
         while (true) {
             StringBuilder id = new StringBuilder(6);

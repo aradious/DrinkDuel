@@ -7,7 +7,7 @@ import java.util.function.Function;
 
 /** Internal storage boundary. Callers handle authentication; never expose aggregates as API responses. */
 public interface RoomStore {
-    Room create(PlayerIdentity.Google verifiedOwner, String nickname);
+    Room create(PlayerIdentity.Owner verifiedOwner, String nickname);
     Optional<Room> find(String roomId);
 
     /**

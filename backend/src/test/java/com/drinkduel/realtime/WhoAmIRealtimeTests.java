@@ -33,7 +33,7 @@ class WhoAmIRealtimeTests {
         realtime.command(guest.connection, new RoomProtocol.Command("JOIN_ROOM", requestId(), room.id(), "Ken", token.value(), null));
     }
     private String requestId() { return UUID.randomUUID().toString(); }
-    private Socket socket(PlayerIdentity.Google owner) {
+    private Socket socket(PlayerIdentity.Owner owner) {
         var client = new RoomRealtimeTests.Client();
         var socket = new Socket(realtime.open(client, owner), client);
         sockets.add(socket);
@@ -94,7 +94,7 @@ class WhoAmIRealtimeTests {
         assertTrue(guest.client.state().game().participants().stream().allMatch(RoomProtocol.ParticipantView::submitted));
         assertTrue(guest.client.state().game().participants().stream().allMatch(p -> p.resetSubmissionId() == null));
         assertTrue(gm.client.state().allowedActions().contains("GM_SHUFFLE"));
-        assertNoSecrets("SECRET-DORAEMON", token.value(), token.identity().fingerprint(), room.owner().subject());
+        assertNoSecrets("SECRET-DORAEMON", token.value(), token.identity().fingerprint(), ((PlayerIdentity.Google) room.owner()).subject());
     }
 
     @Test void resetBroadcastsProgressResubmissionAndStaleResetReturnsFreshSafeState() {

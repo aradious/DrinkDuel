@@ -26,7 +26,7 @@ class RoomRealtimeTests {
         room = service.createRoom(new PlayerIdentity.Google("private-google-subject"), "GM");
     }
 
-    private Socket socket(PlayerIdentity.Google owner) {
+    private Socket socket(PlayerIdentity.Owner owner) {
         var client = new Client();
         return new Socket(realtime.open(client, owner), client);
     }
@@ -68,6 +68,8 @@ class RoomRealtimeTests {
         var guestView = guest.client.state();
         assertEquals(2, gmView.players().size());
         assertEquals(gmView.players(), guestView.players());
+        assertEquals(room.playerFor(room.owner()).avatarId(), gmView.players().get(0).avatarId());
+        assertTrue(AvatarCatalog.contains(guestView.players().get(1).avatarId()));
         assertEquals(room.gmPlayerId(), gmView.currentPlayerId());
         assertEquals(current().playerFor(token.identity()).id(), guestView.currentPlayerId());
         assertTrue(gmView.isGm());
@@ -80,6 +82,8 @@ class RoomRealtimeTests {
         service.joinRoom(room.id(), "External join", GuestToken.generate());
         assertEquals(3, guest.client.state().players().size());
         assertEquals(3, gm.client.state().players().size());
+        assertEquals(gmView.players(), gm.client.state().players().subList(0, 2));
+        assertEquals(gm.client.state().players(), guest.client.state().players());
     }
 
     @Test void serializedSnapshotsExcludeAllPrivateIdentityAndSynchronizationData() {
@@ -91,7 +95,7 @@ class RoomRealtimeTests {
         String json = new JsonMapper().writeValueAsString(gm.client.state());
         assertFalse(json.contains(token.value()));
         assertFalse(json.contains(token.identity().fingerprint()));
-        assertFalse(json.contains(room.owner().subject()));
+        assertFalse(json.contains(((PlayerIdentity.Google) room.owner()).subject()));
         for (String field : List.of("kickedGuests", "owner", "identity", "fingerprint", "lock", "guestToken"))
             assertFalse(json.contains("\"" + field + "\""), field);
         assertEquals("PLAYER_KICKED", guest.client.terminal().reason());

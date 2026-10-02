@@ -1,1 +1,877 @@
-/* You can add global styles to this file, and also import other style files */
+:root {
+  color-scheme: light;
+  --ink: #29203f;
+  --muted: #655977;
+  --purple: #6631ce;
+  --purple-deep: #422087;
+  --coral: #f96679;
+  --orange: #ff9a50;
+  --yellow: #ffe36e;
+  --aqua: #74e1d5;
+  --surface: #fffefa;
+  --lavender: #eee5ff;
+  --line: #c4b5d7;
+  --danger: #a22b48;
+  --radius-card: 28px;
+  --radius-control: 18px;
+  --shadow-card: 0 6px 0 #38224b0c, 0 14px 32px #49307212;
+  --shadow-button: 0 5px 0 var(--purple-deep), 0 8px 16px #6631ce24;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  color: var(--ink);
+  background: #f8f3ff;
+  font-synthesis: none;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-width: 280px;
+  background:
+    radial-gradient(ellipse at 0 0, #ffe0e9 0, transparent 42%),
+    radial-gradient(ellipse at 100% 45%, #d9f7f0 0, transparent 42%);
+  min-height: 100dvh;
+}
+button,
+input,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+input {
+  font: inherit;
+}
+button,
+.button {
+  min-height: 52px;
+  border-radius: var(--radius-control);
+  border: 2px solid transparent;
+  padding: 13px 22px;
+  font-size: 16px;
+  font-weight: 750;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    background 0.16s ease;
+}
+button:hover:not(:disabled),
+.button:hover {
+  transform: translateY(-2px);
+}
+button:active:not(:disabled),
+.button:active {
+  transform: translateY(3px);
+  box-shadow: none;
+}
+button:disabled {
+  cursor: not-allowed;
+  color: #655c70;
+  background: #e9e3ef;
+  border-color: #b6a8c6;
+  box-shadow: none;
+}
+a {
+  color: var(--purple-deep);
+}
+:focus-visible {
+  outline: 3px solid var(--purple-deep);
+  outline-offset: 4px;
+}
+.primary {
+  background: var(--purple);
+  color: #fff;
+  box-shadow: var(--shadow-button);
+}
+.primary:hover:not(:disabled) {
+  background: #5825bc;
+}
+.secondary {
+  background: var(--surface);
+  border-color: #9b7db8;
+  color: var(--purple-deep);
+  box-shadow: 0 3px 0 #b9a3d0;
+}
+.quiet {
+  background: transparent;
+  text-decoration: underline;
+  color: var(--purple-deep);
+}
+.danger {
+  color: var(--danger);
+}
+.destructive {
+  background: var(--danger);
+  color: #fff;
+}
+.site-shell {
+  max-width: 1160px;
+  margin: auto;
+  padding: 28px max(20px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom));
+}
+main {
+  min-height: calc(100dvh - 120px);
+}
+footer {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--muted);
+  margin-top: 36px;
+}
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+h1 {
+  font-size: clamp(32px, 5vw, 48px);
+  letter-spacing: -1.5px;
+  line-height: 1.12;
+  margin-bottom: 18px;
+  font-weight: 850;
+}
+h2 {
+  font-size: 24px;
+  letter-spacing: -0.5px;
+  margin-bottom: 10px;
+}
+h3 {
+  font-size: 18px;
+  margin-bottom: 8px;
+  overflow-wrap: anywhere;
+}
+p {
+  line-height: 1.6;
+}
+.eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+  color: var(--purple-deep);
+  margin-bottom: 12px;
+}
+.lede {
+  font-size: 18px;
+  color: var(--muted);
+}
+.accent {
+  color: #c53665;
+}
+.panel {
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  border: 2px solid #fff;
+  padding: var(--space-6);
+  box-shadow: var(--shadow-card);
+}
+.home {
+  margin: 8px auto 0;
+  text-align: center;
+}
+.hero-content {
+  padding: 26px 0 0;
+}
+.home h1 {
+  font-size: clamp(52px, 10vw, 84px);
+  letter-spacing: -4px;
+  margin-bottom: 14px;
+  line-height: 1.08;
+}
+.home h1 > span {
+  color: var(--purple);
+}
+.home-actions {
+  display: grid;
+  gap: 18px;
+  max-width: 390px;
+  margin: 26px auto;
+}
+.home-actions .button {
+  justify-content: space-between;
+  min-height: 60px;
+  padding-inline: 24px;
+  font-size: 18px;
+}
+.text-link {
+  display: inline-block;
+  min-height: 44px;
+  padding: 12px 0;
+  font-size: 15px;
+}
+.how {
+  margin: 18px auto 0;
+  font-size: 14px;
+  max-width: 390px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #ffffffa0;
+}
+summary {
+  min-height: 48px;
+  padding: 14px;
+  cursor: pointer;
+  color: var(--purple-deep);
+  font-weight: 700;
+}
+.how p {
+  text-align: left;
+  padding: 0 18px 8px;
+}
+.footnote {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 24px 0 0;
+}
+.form-page {
+  max-width: 500px;
+  margin: 0 auto;
+}
+.form-page h1 {
+  max-width: 440px;
+}
+.form-page .panel {
+  border-top: 7px solid var(--coral);
+}
+.back {
+  display: inline-block;
+  padding: 12px 16px;
+  margin-bottom: 26px;
+  font-size: 15px;
+  background: #ffffffb0;
+  border-radius: 30px;
+  text-decoration: none;
+  font-weight: 700;
+}
+label {
+  display: block;
+  font-weight: 750;
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+input {
+  width: 100%;
+  min-height: 56px;
+  padding: 14px 16px;
+  background: #fff;
+  border: 2px solid #9b88b2;
+  color: var(--ink);
+  border-radius: var(--radius-control);
+  font-size: 16px;
+  box-shadow: inset 0 3px 0 #49256507;
+}
+input:focus {
+  border-color: var(--purple);
+}
+input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+input::placeholder {
+  color: #74657f;
+}
+form button {
+  width: 100%;
+}
+.field-error {
+  color: var(--danger);
+  font-size: 14px;
+  min-height: 21px;
+  margin: 5px 0 14px;
+}
+.support {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+.notice {
+  background: #fff0cb;
+  border: 1px solid #bb8427;
+  border-left-width: 5px;
+  border-radius: 16px;
+  padding: 16px;
+  font-size: 15px;
+  color: #66471e;
+  margin: 20px 0;
+  overflow-wrap: anywhere;
+}
+.chip {
+  display: inline-block;
+  border-radius: 30px;
+  padding: 8px 14px;
+  background: var(--lavender);
+  color: var(--purple-deep);
+  font-size: 14px;
+  font-weight: 750;
+  white-space: nowrap;
+  margin-bottom: 12px;
+  border: 1px solid #d0b7f2;
+}
+.lobby {
+  max-width: 920px;
+  margin: 8px auto;
+}
+.lobby-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.invite {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: linear-gradient(120deg, #6631ce, #803ee0);
+  border-color: #a783ed;
+  color: #fff;
+  box-shadow:
+    0 7px 0 #42208720,
+    0 16px 30px #6631ce20;
+}
+.invite .eyebrow,
+.invite .support {
+  color: #fff;
+}
+.invite .eyebrow {
+  margin-bottom: 4px;
+}
+.invite img {
+  max-width: 34%;
+  width: 140px;
+  height: auto;
+  border: 8px solid #fffdf8;
+  border-radius: 18px;
+  box-shadow: 0 5px 0 #36167644;
+}
+.room-code {
+  font-size: clamp(25px, 6vw, 48px);
+  font-weight: 900;
+  letter-spacing: 3px;
+  line-height: 1.3;
+  margin: 0 0 8px;
+  color: var(--yellow);
+}
+.small {
+  font-size: 14px;
+  padding: 8px 15px;
+  min-height: 44px;
+}
+.section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 32px 0 16px;
+}
+.section-title h2 {
+  margin: 0;
+}
+.section-title > span {
+  color: var(--purple-deep);
+  font-size: 14px;
+  font-weight: 750;
+  background: var(--lavender);
+  border-radius: 20px;
+  padding: 6px 12px;
+}
+.crew {
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 16px;
+  list-style: none;
+}
+.player-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 2px solid #fff;
+  border-radius: 24px;
+  padding: 18px 16px;
+  background: linear-gradient(110deg, #e7f9f4 0, #fffefa 46%);
+  box-shadow: var(--shadow-card);
+  border-left: 6px solid var(--aqua);
+  min-width: 0;
+  transition: transform 0.16s ease;
+}
+.player-card:nth-child(3n + 2) {
+  border-left-color: var(--coral);
+  background: linear-gradient(110deg, #ffe7ed, #fffefa 46%);
+}
+.player-card:nth-child(3n + 3) {
+  border-left-color: var(--yellow);
+  background: linear-gradient(110deg, #fff3c8, #fffefa 46%);
+}
+.player-card.self-card {
+  border-color: #aa83e2;
+  border-left-color: var(--purple);
+}
+.player-info {
+  flex: 1;
+  min-width: 0;
+}
+.player-info p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.you {
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 10px;
+  letter-spacing: 0.7px;
+  color: white;
+  background: var(--purple);
+  border-radius: 6px;
+  padding: 3px 6px;
+  margin-left: 4px;
+}
+.gm-badge {
+  display: block;
+  width: fit-content;
+  border-radius: 8px;
+  padding: 1px 7px;
+  margin-bottom: 4px;
+  background: #ffeb97;
+  color: #644611;
+  font-size: 12px;
+  font-weight: 750;
+}
+.kick {
+  background: transparent;
+  color: var(--danger);
+  font-size: 14px;
+  padding: 8px;
+  min-width: 44px;
+}
+.game-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 28px;
+  background: linear-gradient(115deg, #fff2b4, #ffe3c4);
+  border-color: #fff;
+}
+.game-preview h2 {
+  margin: 0;
+  font-size: 28px;
+}
+.game-preview .support {
+  margin: 6px 0 0;
+  color: #655038;
+}
+.game-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 64px;
+  height: 76px;
+  border-radius: 20px;
+  background: var(--coral);
+  border: 3px solid #fff;
+  color: #491d45;
+  font-size: 44px;
+  font-weight: 900;
+  transform: rotate(-9deg);
+  box-shadow: 4px 5px 0 #df765738;
+}
+.game-preview button {
+  margin-left: auto;
+}
+.room-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 28px 0;
+}
+.waiting {
+  text-align: center;
+  background: #d9f5ed;
+  color: #285547;
+  border: 1px solid #98c5b7;
+  border-radius: 18px;
+  padding: 16px;
+  font-size: 15px;
+}
+.waiting span {
+  display: inline-block;
+  animation: sway 2s ease-in-out infinite;
+}
+.empty {
+  text-align: center;
+}
+.empty-face {
+  display: block;
+  font-size: 48px;
+  margin: 20px;
+}
+dialog {
+  max-width: min(430px, calc(100vw - 32px));
+  border: 3px solid #fff;
+  border-radius: var(--radius-card);
+  padding: 28px;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 20px 80px #33243b33;
+}
+dialog::backdrop {
+  background: #29203f99;
+}
+.dialog-actions {
+  display: grid;
+  gap: 12px;
+}
+.avatar-pop {
+  position: fixed;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+  border: 3px solid var(--aqua);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: 0 6px 40px #34283d30;
+  width: min(380px, calc(100vw - 32px));
+  animation: arrive 0.3s ease-out;
+  pointer-events: none;
+}
+.page-enter {
+  animation: arrive 0.25s ease-out;
+}
+@keyframes arrive {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes sway {
+  50% {
+    transform: rotate(8deg);
+  }
+}
+@media (hover: hover) {
+  .player-card:hover {
+    transform: translateY(-2px);
+  }
+}
+@media (min-width: 760px) {
+  .site-shell {
+    padding-top: 48px;
+  }
+  .crew {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .invite {
+    padding: 28px 36px;
+  }
+  .form-page {
+    padding: 24px 0;
+  }
+}
+@media (max-width: 360px) {
+  .site-shell {
+    padding-inline: 16px;
+  }
+  .panel {
+    padding: 18px;
+  }
+  .player-card {
+    gap: 10px;
+    padding: 12px;
+  }
+  .kick {
+    font-size: 12px;
+    padding: 4px;
+  }
+  .room-code {
+    letter-spacing: 1px;
+  }
+  .invite {
+    gap: 8px;
+  }
+  .invite img {
+    border-width: 5px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  button:hover:not(:disabled),
+  .button:hover,
+  .player-card:hover,
+  button:active:not(:disabled),
+  .button:active {
+    transform: none;
+  }
+}
+
+/* Artwork stays separate from the interactive UI and is selected entirely in CSS. */
+body:has(.home),
+body:has(.lobby) {
+  background: #21142d;
+  isolation: isolate;
+}
+body:has(.home)::before,
+body:has(.lobby)::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-size: cover;
+  background-position: center;
+}
+body:has(.home)::before {
+  background-image:
+    linear-gradient(#180b2b45, #180b2b65),
+    url('/assets/drinkduel/backgrounds/cafe-home-mobile.webp');
+}
+body:has(.lobby)::before {
+  background-image:
+    linear-gradient(#180b2b30, #180b2b40),
+    url('/assets/drinkduel/backgrounds/cafe-room.webp');
+}
+.site-shell:has(.home),
+.site-shell:has(.lobby) {
+  max-width: 1240px;
+  padding-top: 24px;
+}
+.site-shell:has(.home) footer,
+.site-shell:has(.lobby) footer {
+  color: #fff;
+  background: #241430e8;
+  border-radius: 20px;
+  width: fit-content;
+  margin: 24px auto 0;
+  padding: 10px 16px;
+  line-height: 1.5;
+}
+.home {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  max-width: 540px;
+  margin: 0 auto;
+  text-align: center;
+  min-height: auto;
+}
+.home-heading {
+  color: #fff;
+  background: #21112ce8;
+  border: 1px solid #ffd6f060;
+  border-radius: 28px;
+  padding: 18px 16px 12px;
+  box-shadow: 0 12px 32px #120a2430;
+}
+.home-heading .eyebrow {
+  color: #ffe1a0;
+  font-size: 10px;
+  margin-bottom: 8px;
+}
+.home h1 {
+  color: #fff;
+  font-size: clamp(44px, 11vw, 68px);
+  letter-spacing: -2.5px;
+  margin-bottom: 8px;
+}
+.home h1 > span {
+  color: #ffb4dc;
+}
+.home .lede {
+  color: #fff5e9;
+  font-size: 16px;
+  line-height: 1.45;
+  margin-bottom: 0;
+}
+.hero-art {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  margin: 0;
+  border-radius: 28px;
+  overflow: hidden;
+  border: 2px solid #ffe9c9c0;
+  background: #35182c;
+  box-shadow:
+    0 8px 0 #24102e45,
+    0 18px 40px #140a2b60;
+}
+.hero-art::before {
+  content: none;
+}
+.hero-art img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: contain;
+}
+.hero-content {
+  padding: 0;
+  min-width: 0;
+}
+.home-actions {
+  margin: 0 auto 16px;
+  gap: 14px;
+  max-width: none;
+}
+.home-actions .primary {
+  background: #6631ce;
+  border-color: #d5b5ff;
+}
+.home-actions .secondary {
+  border-color: #fff3cd;
+  background: #fff5df;
+}
+.home .how {
+  background: #fffefa;
+  margin: 12px auto 0;
+  max-width: none;
+  border-color: #ead3f1;
+}
+.home .text-link,
+.home .footnote {
+  background: #21112ced;
+  color: #fff5e9;
+  border-radius: 18px;
+  padding: 10px 16px;
+  width: fit-content;
+  margin: 12px auto 0;
+}
+.home .notice {
+  text-align: left;
+}
+.lobby {
+  max-width: 960px;
+  margin: 0 auto;
+}
+.lobby-heading {
+  background: #21112ced;
+  border: 1px solid #ffd6f060;
+  border-radius: 24px;
+  color: #fff;
+  padding: 18px 22px;
+  margin-bottom: 24px;
+}
+.lobby-heading .eyebrow {
+  color: #ffe1a0;
+}
+.lobby-heading h1 {
+  margin-bottom: 0;
+}
+.lobby-heading .accent {
+  color: #ffb4dc;
+}
+.lobby-heading .chip {
+  margin: 0;
+}
+.lobby .section-title {
+  color: #fff;
+  background: #21112ced;
+  border: 1px solid #ffd6f060;
+  border-radius: 18px;
+  padding: 12px 16px;
+  margin-top: 28px;
+}
+.lobby .panel,
+.lobby .player-card {
+  box-shadow:
+    0 5px 0 #18092450,
+    0 14px 30px #18092445;
+}
+.lobby .invite {
+  background: #5427b5;
+}
+.lobby .player-card {
+  background: #fffefa;
+}
+.lobby .room-actions {
+  width: fit-content;
+  margin: 24px auto;
+  padding: 8px 12px;
+  background: #fffefa;
+  border-radius: 22px;
+  box-shadow: 0 8px 24px #18092440;
+}
+.lobby > .quiet,
+.lobby > .secondary {
+  background: #fffefa;
+}
+.lobby .game-preview {
+  background: #fff0cb;
+}
+@media (min-width: 760px) {
+  body:has(.home)::before {
+    background-image:
+      linear-gradient(#180b2b25, #180b2b45), url('/assets/drinkduel/backgrounds/cafe-home.webp');
+  }
+  body:has(.lobby)::before {
+    background-image:
+      linear-gradient(#180b2b25, #180b2b35), url('/assets/drinkduel/backgrounds/cafe-room.webp');
+  }
+  .site-shell:has(.home),
+  .site-shell:has(.lobby) {
+    padding-top: 40px;
+  }
+  .home {
+    max-width: 1160px;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    gap: 24px 36px;
+    align-content: center;
+    min-height: calc(100svh - 140px);
+    text-align: left;
+  }
+  .home-heading {
+    grid-column: 1;
+    padding: 24px;
+    align-self: end;
+  }
+  .home h1 {
+    font-size: clamp(44px, 5.2vw, 74px);
+  }
+  .hero-art {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    align-self: center;
+    order: initial;
+    min-height: 0;
+    display: block;
+  }
+  .hero-content {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+    padding: 0;
+  }
+  .home .footnote {
+    margin-left: 0;
+  }
+}

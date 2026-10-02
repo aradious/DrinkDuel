@@ -19,14 +19,14 @@ public final class Room {
 
     private final String id;
     private final Instant createdAt;
-    private final PlayerIdentity.Google owner;
+    private final PlayerIdentity.Owner owner;
     private final UUID gmPlayerId;
     private final List<Player> players;
     private final GameSession currentSession;
     private final long revision;
     private final Set<PlayerIdentity.Guest> kickedGuests;
 
-    private Room(String id, Instant createdAt, PlayerIdentity.Google owner, UUID gmPlayerId,
+    private Room(String id, Instant createdAt, PlayerIdentity.Owner owner, UUID gmPlayerId,
                  List<Player> players, GameSession currentSession, long revision,
                  Set<PlayerIdentity.Guest> kickedGuests) {
         this.id = id;
@@ -40,15 +40,15 @@ public final class Room {
     }
 
     static Room create(String id, Instant createdAt, Player gm) {
-        if (!(gm.identity() instanceof PlayerIdentity.Google google))
+        if (!(gm.identity() instanceof PlayerIdentity.Owner owner))
             throw new DomainException(DomainException.Code.NOT_AUTHORIZED);
-        return new Room(id, createdAt, google, gm.id(), List.of(gm), null, 0, Set.of());
+        return new Room(id, createdAt, owner, gm.id(), List.of(gm), null, 0, Set.of());
     }
 
     public String id() { return id; }
     public Instant createdAt() { return createdAt; }
     public Instant expiresAt() { return createdAt.plus(LIFETIME); }
-    public PlayerIdentity.Google owner() { return owner; }
+    public PlayerIdentity.Owner owner() { return owner; }
     public UUID gmPlayerId() { return gmPlayerId; }
     public List<Player> players() { return players; }
     public Optional<GameSession> currentSession() { return Optional.ofNullable(currentSession); }

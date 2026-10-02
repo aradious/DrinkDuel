@@ -40,8 +40,6 @@ public final class RoomViewFactory {
                     actions.add("GM_PLAY_AGAIN");
             }
             if (state.phase() == WhoAmIState.Phase.PLAYING) {
-                if (state.results().get(recipient).status() == WhoAmIState.PlayerGameStatus.PLAYING)
-                    actions.add("GIVE_UP");
                 if (connectedGm) {
                     if (state.results().values().stream().anyMatch(r -> r.status() == WhoAmIState.PlayerGameStatus.PLAYING))
                         actions.add("GM_MARK_GOT_IT");
@@ -63,8 +61,7 @@ public final class RoomViewFactory {
                                     state.results().get(p.id()).version(),
                                     p.id().equals(recipient) ? null : state.assignments().get(p.id()).submission().text()))
                             .toList(), state.phase() == WhoAmIState.Phase.ROAST ? new RoomProtocol.RoastView(
-                            state.roastSummary().kind().name(), state.roastSummary().playingPlayerIds(),
-                            state.roastSummary().gaveUpPlayerIds()) : null,
+                            state.roastSummary().kind().name(), state.roastSummary().playingPlayerIds()) : null,
                     state.phase() != WhoAmIState.Phase.REVEAL ? java.util.List.of() :
                     room.players().stream().filter(p -> state.participantIds().contains(p.id())).map(p -> {
                         var submission = state.assignments().get(p.id()).submission();

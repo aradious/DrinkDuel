@@ -35,7 +35,7 @@ public final class RoomProtocol {
                              int submittedCount, int participantCount, boolean currentPlayerSubmitted,
                              boolean readyForShuffle, boolean canShuffle, List<GameCard> cards,
                              RoastView roast, List<RevealCard> reveal) {}
-    public record RoastView(String kind, List<UUID> playingPlayerIds, List<UUID> gaveUpPlayerIds) {}
+    public record RoastView(String kind, List<UUID> playingPlayerIds) {}
     /** Reveal-only display data; never expose submission IDs, creator identity bindings, or result versions. */
     public record RevealCard(UUID playerId, String nickname, int avatarId, String gameStatus,
                              String assignedName, String createdBy) {}

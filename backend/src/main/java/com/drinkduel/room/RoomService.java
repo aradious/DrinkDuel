@@ -20,7 +20,7 @@ public final class RoomService {
         this.avatars = Objects.requireNonNull(avatars);
     }
 
-    public Room createRoom(PlayerIdentity.Google verifiedOwner, String nickname) {
+    public Room createRoom(PlayerIdentity.Owner verifiedOwner, String nickname) {
         return store.create(verifiedOwner, nickname);
     }
 
@@ -33,7 +33,7 @@ public final class RoomService {
         return presence(roomId, Objects.requireNonNull(token).identity(), ConnectionState.CONNECTED);
     }
 
-    public Room reconnectGm(String roomId, PlayerIdentity.Google verifiedOwner) {
+    public Room reconnectGm(String roomId, PlayerIdentity.Owner verifiedOwner) {
         return presence(roomId, Objects.requireNonNull(verifiedOwner), ConnectionState.CONNECTED);
     }
 
@@ -103,14 +103,6 @@ public final class RoomService {
             room.requireGm(actor);
             var state = gameState(room, sessionId, WhoAmIState.Phase.PLAYING);
             return room.withSession(new GameSession(sessionId, state.markGotIt(targetPlayerId)));
-        });
-    }
-
-    public Room giveUp(String roomId, PlayerIdentity actor, UUID sessionId) {
-        return store.mutate(roomId, room -> {
-            Player player = room.playerFor(actor);
-            var state = gameState(room, sessionId, WhoAmIState.Phase.PLAYING);
-            return room.withSession(new GameSession(sessionId, state.giveUp(player.id())));
         });
     }
 

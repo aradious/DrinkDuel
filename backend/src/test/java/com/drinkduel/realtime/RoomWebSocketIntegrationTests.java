@@ -172,14 +172,9 @@ class RoomWebSocketIntegrationTests {
                 var give = new RoomProtocol.Command("GIVE_UP", UUID.randomUUID().toString(), room.id(),
                         null, null, null, session.toString(), null, null);
                 socket.sendText(new JsonMapper().writeValueAsString(give), true).get(5, TimeUnit.SECONDS);
-                var gaveUp = messages.next("STATE");
-                assertPlayingWire(gaveUp, guestId, token, room);
-                assertEquals("GAVE_UP", gaveUp.get("room").get("game").get("cards").get(1).get("gameStatus").asString());
-                assertTrue(messages.next("COMMAND_RESULT").get("accepted").asBoolean());
-                service.resetPlayerStatus(room.id(), room.owner(), session, guestId, 1);
-                var reset = messages.next("STATE");
-                assertPlayingWire(reset, guestId, token, room);
-                assertEquals("PLAYING", reset.get("room").get("game").get("cards").get(1).get("gameStatus").asString());
+                var removed = messages.next("COMMAND_RESULT");
+                assertEquals("INVALID_INPUT", removed.get("code").asString());
+                assertFalse(removed.toString().contains("WIRE-"));
                 service.markGotIt(room.id(), room.owner(), session, guestId);
                 var gotIt = messages.next("STATE");
                 assertPlayingWire(gotIt, guestId, token, room);
@@ -187,12 +182,6 @@ class RoomWebSocketIntegrationTests {
                 send(socket, "GET_STATE", room.id(), null, null);
                 assertPlayingWire(messages.next("STATE"), guestId, token, room);
                 messages.next("COMMAND_RESULT");
-                socket.sendText(new JsonMapper().writeValueAsString(new RoomProtocol.Command("GIVE_UP",
-                        UUID.randomUUID().toString(), room.id(), null, null, null, session.toString(), null, null)),
-                        true).get(5, TimeUnit.SECONDS);
-                var invalid = messages.next("COMMAND_RESULT");
-                assertEquals("INVALID_TRANSITION", invalid.get("code").asString());
-                assertFalse(invalid.toString().contains("WIRE-"));
             } finally { socket.abort(); }
         }
     }
@@ -216,6 +205,8 @@ class RoomWebSocketIntegrationTests {
                         null, null, null, session.toString(), null, null);
                 socket.sendText(new JsonMapper().writeValueAsString(forged), true).get(5, TimeUnit.SECONDS);
                 assertEquals("NOT_AUTHORIZED", messages.next("COMMAND_RESULT").get("code").asString());
+                service.markGotIt(room.id(), room.owner(), session,
+                        UUID.fromString(joined.get("currentPlayerId").asString())); messages.next("STATE");
                 service.endGame(room.id(), room.owner(), session);
                 var roast = messages.next("STATE");
                 assertEquals("ROAST", roast.get("room").get("game").get("phase").asString());
@@ -228,7 +219,7 @@ class RoomWebSocketIntegrationTests {
                 assertEquals("Ken", cards.get(0).get("createdBy").asString());
                 assertEquals("WIRE-OWN-HIDDEN", cards.get(1).get("assignedName").asString());
                 assertEquals("GM", cards.get(1).get("createdBy").asString());
-                for (String secret : java.util.List.of(token.value(), token.identity().fingerprint(), room.owner().subject(),
+                for (String secret : java.util.List.of(token.value(), token.identity().fingerprint(), ((PlayerIdentity.Google) room.owner()).subject(),
                         "submitterPlayerId", "statusVersion", "resetSubmissionId")) assertFalse(revealed.toString().contains(secret));
                 service.playAgain(room.id(), room.owner(), session);
                 var fresh = messages.next("STATE").get("room");
@@ -241,7 +232,6 @@ class RoomWebSocketIntegrationTests {
                 service.submitName(room.id(), token.identity(), next, "Round two Ken"); messages.next("STATE");
                 service.shuffle(room.id(), room.owner(), next); messages.next("STATE");
                 service.endGame(room.id(), room.owner(), next); messages.next("STATE");
-                service.continueReveal(room.id(), room.owner(), next); messages.next("STATE");
                 service.backToRoom(room.id(), room.owner(), next);
                 var lobby = messages.next("STATE").get("room");
                 assertTrue(lobby.get("game").isNull()); assertTrue(lobby.get("joinable").asBoolean());
@@ -257,7 +247,7 @@ class RoomWebSocketIntegrationTests {
         assertFalse(wire.contains("WIRE-OWN-HIDDEN"));
         assertTrue(wire.contains("WIRE-OTHER-VISIBLE"));
         for (String forbidden : java.util.List.of("submitterPlayerId", "submitterNickname", "resetSubmissionId",
-                token.value(), token.identity().fingerprint(), room.owner().subject()))
+                token.value(), token.identity().fingerprint(), ((PlayerIdentity.Google) room.owner()).subject()))
             assertFalse(wire.contains(forbidden));
         var view = message.get("room");
         assertEquals(self.toString(), view.get("currentPlayerId").asString());

@@ -6,10 +6,10 @@ import java.util.Objects;
 
 /** Only a trusted server authentication adapter may populate this handshake principal.
  * No header, query parameter, or command payload is converted into an owner principal.
- * Google authentication and room creation endpoints are deferred.
+ * The concrete verified owner mechanism is outside the room domain.
  */
-public record AuthenticatedOwnerPrincipal(PlayerIdentity.Google identity) implements Principal {
+public record AuthenticatedOwnerPrincipal(PlayerIdentity.Owner identity) implements Principal {
     public AuthenticatedOwnerPrincipal { Objects.requireNonNull(identity); }
-    @Override public String getName() { return identity.subject(); }
+    @Override public String getName() { return "authenticated-owner"; }
     @Override public String toString() { return "AuthenticatedOwnerPrincipal[redacted]"; }
 }
