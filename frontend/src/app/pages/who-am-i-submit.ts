@@ -122,8 +122,8 @@ import { Avatar } from '../shared/avatar';
                     <p>Shuffle unlocks when every remaining player has submitted.</p>
                   }
                   <button class="shuffle" type="button" [disabled]="!client.can('GM_SHUFFLE')" (click)="client.shuffle()">Shuffle Names</button>
-                  @if (client.can('GM_BACK_TO_ROOM')) {
-                    <button class="back-room" type="button" (click)="client.backToRoom()">Back to Room</button>
+                  @if (room.allowedActions.includes('GM_BACK_TO_ROOM')) {
+                    <button class="choose-another" type="button" [disabled]="!client.can('GM_BACK_TO_ROOM')" (click)="client.chooseAnotherGame()">← Choose Another Game</button>
                   }
                 </div>
               } @else {

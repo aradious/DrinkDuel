@@ -1,9 +1,13 @@
 package com.drinkduel.room;
 
 import com.drinkduel.game.GameSession;
+import com.drinkduel.game.AuthoritativeDiceRoller;
+import com.drinkduel.game.LiarsDiceState;
+import com.drinkduel.game.SecureDiceRandomSource;
 import com.drinkduel.game.WhoAmIState;
 import java.util.Objects;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /** Internal application boundary. Returned snapshots must never be serialized directly to clients.
@@ -13,11 +17,18 @@ import org.springframework.stereotype.Service;
 public final class RoomService {
     private final RoomStore store;
     private final AvatarCatalog avatars;
+    private final AuthoritativeDiceRoller diceRoller;
     private final java.security.SecureRandom shuffleRandom = new java.security.SecureRandom();
 
+    @Autowired
     public RoomService(RoomStore store, AvatarCatalog avatars) {
+        this(store, avatars, new AuthoritativeDiceRoller(new SecureDiceRandomSource()));
+    }
+
+    public RoomService(RoomStore store, AvatarCatalog avatars, AuthoritativeDiceRoller diceRoller) {
         this.store = Objects.requireNonNull(store);
         this.avatars = Objects.requireNonNull(avatars);
+        this.diceRoller = Objects.requireNonNull(diceRoller);
     }
 
     public Room createRoom(PlayerIdentity.Owner verifiedOwner, String nickname) {
@@ -64,6 +75,53 @@ public final class RoomService {
             var state = new WhoAmIState(room.players().stream().map(Player::id).toList());
             return room.startSession(actor, new GameSession(UUID.randomUUID(), state));
         });
+    }
+
+    public Room selectLiarsDice(String roomId, PlayerIdentity actor) {
+        return store.mutate(roomId, room -> {
+            room.requireGm(actor);
+            if (!room.isLobby()) throw new DomainException(DomainException.Code.GAME_IN_PROGRESS);
+            return room.withSession(new GameSession(UUID.randomUUID(), LiarsDiceState.start()));
+        });
+    }
+
+    public Room startLiarsDice(String roomId, PlayerIdentity actor, UUID sessionId) {
+        return store.mutate(roomId, room -> {
+            room.requireGm(actor);
+            var state = liarsDiceState(room, sessionId, LiarsDiceState.Phase.START);
+            var roster = room.players().stream()
+                    .filter(player -> player.connectionState() == ConnectionState.CONNECTED)
+                    .map(Player::id)
+                    .toList();
+            if (roster.size() < Room.MIN_ACTIVE_PLAYERS)
+                throw new DomainException(DomainException.Code.NOT_ENOUGH_PLAYERS);
+            return room.withSession(new GameSession(sessionId, state.startRound(roster, diceRoller)));
+        });
+    }
+
+    public Room endLiarsDice(String roomId, PlayerIdentity actor, UUID sessionId) {
+        return store.mutate(roomId, room -> {
+            room.requireGm(actor);
+            var state = liarsDiceState(room, sessionId, LiarsDiceState.Phase.PLAYING);
+            return room.withSession(new GameSession(sessionId, state.reveal()));
+        });
+    }
+
+    public Room restartLiarsDice(String roomId, PlayerIdentity actor, UUID sessionId) {
+        return store.mutate(roomId, room -> {
+            room.requireGm(actor);
+            liarsDiceState(room, sessionId, LiarsDiceState.Phase.REVEAL);
+            return room.withSession(new GameSession(UUID.randomUUID(), LiarsDiceState.start()));
+        });
+    }
+
+    private LiarsDiceState liarsDiceState(Room room, UUID sessionId, LiarsDiceState.Phase phase) {
+        var session = room.currentSession()
+                .orElseThrow(() -> new DomainException(DomainException.Code.INVALID_GAME_PHASE));
+        if (!session.id().equals(sessionId)) throw new DomainException(DomainException.Code.STALE_COMMAND);
+        if (!(session.state() instanceof LiarsDiceState state) || state.phase() != phase)
+            throw new DomainException(DomainException.Code.INVALID_GAME_PHASE);
+        return state;
     }
 
     public Room submitName(String roomId, PlayerIdentity actor, UUID sessionId, String text) {
@@ -157,7 +215,14 @@ public final class RoomService {
     public Room backToRoom(String roomId, PlayerIdentity actor, UUID sessionId) {
         return store.mutate(roomId, room -> {
             room.requireGm(actor);
-            if (!gameState(room, sessionId).canBackToRoom())
+            var session = room.currentSession()
+                    .orElseThrow(() -> new DomainException(DomainException.Code.INVALID_GAME_PHASE));
+            if (!session.id().equals(sessionId))
+                throw new DomainException(DomainException.Code.STALE_COMMAND);
+            boolean allowed = session.state() instanceof WhoAmIState whoAmI && whoAmI.canBackToRoom()
+                    || session.state() instanceof LiarsDiceState liarsDice
+                    && liarsDice.phase() == LiarsDiceState.Phase.START;
+            if (!allowed)
                 throw new DomainException(DomainException.Code.INVALID_GAME_PHASE);
             return room.withoutSession();
         });

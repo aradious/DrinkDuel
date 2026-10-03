@@ -47,18 +47,18 @@ describe('WhoAmISubmit', () => {
     submitName: ReturnType<typeof vi.fn>;
     resetSubmission: ReturnType<typeof vi.fn>;
     shuffle: ReturnType<typeof vi.fn>;
-    backToRoom: ReturnType<typeof vi.fn>;
+    chooseAnotherGame: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
     client = {
       room: signal<RoomView | null>(room),
       busy: signal(false),
-      can: (action) => client.room()?.allowedActions.includes(action) ?? false,
+      can: (action) => !client.busy() && (client.room()?.allowedActions.includes(action) ?? false),
       submitName: vi.fn(),
       resetSubmission: vi.fn(),
       shuffle: vi.fn(),
-      backToRoom: vi.fn(),
+      chooseAnotherGame: vi.fn(),
     };
     TestBed.configureTestingModule({ providers: [{ provide: RoomClient, useValue: client }] });
   });
@@ -100,5 +100,35 @@ describe('WhoAmISubmit', () => {
     expect(root.querySelector('input')).toBeNull();
     expect(root.textContent).toContain('Shuffle Names');
     expect(root.querySelectorAll('.reset')).toHaveLength(1);
+  });
+
+  it('shows the authoritative GM-only Choose Another Game action below Shuffle', () => {
+    client.room.set({ ...room, allowedActions: [...room.allowedActions, 'GM_BACK_TO_ROOM'] });
+    const fixture = TestBed.createComponent(WhoAmISubmit);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const shuffle = root.querySelector<HTMLButtonElement>('.shuffle')!;
+    const choose = root.querySelector<HTMLButtonElement>('.choose-another')!;
+    expect(choose.textContent).toContain('Choose Another Game');
+    expect(shuffle.compareDocumentPosition(choose) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    choose.click();
+    expect(client.chooseAnotherGame).toHaveBeenCalledOnce();
+    client.busy.set(true);
+    fixture.detectChanges();
+    expect(shuffle.disabled).toBe(true);
+    expect(choose.disabled).toBe(true);
+  });
+
+  it('does not advertise Choose Another Game to a normal player', () => {
+    client.room.set({
+      ...room,
+      currentPlayerId: 'guest',
+      isGm: false,
+      allowedActions: ['SUBMIT_NAME'],
+      game: { ...game, currentPlayerSubmitted: true },
+    });
+    const fixture = TestBed.createComponent(WhoAmISubmit);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.choose-another')).toBeNull();
   });
 });

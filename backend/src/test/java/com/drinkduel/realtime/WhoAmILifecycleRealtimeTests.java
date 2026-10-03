@@ -207,6 +207,6 @@ class WhoAmILifecycleRealtimeTests {
         assertFalse(gm.client.state().allowedActions().contains("GM_CHANGE_GAME"));
         send(gm, command("GM_CHANGE_GAME"));
         assertEquals("INVALID_INPUT", gm.client.result().code()); assertSame(before, current());
-        assertEquals(List.of(GameType.WHO_AM_I), List.of(GameType.values()));
+        assertEquals(List.of(GameType.WHO_AM_I, GameType.LIARS_DICE), List.of(GameType.values()));
     }
 }

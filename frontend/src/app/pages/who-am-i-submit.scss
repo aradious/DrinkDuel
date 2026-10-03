@@ -453,12 +453,21 @@
   line-height: 1.45;
 }
 
-.back-room {
+.choose-another {
   min-height: 44px;
   color: #f6eafa;
   border: 1px solid rgb(255 255 255 / 0.2);
-  background: rgb(255 255 255 / 0.08);
-  box-shadow: none;
+  background: rgb(42 14 51 / 0.72);
+  box-shadow: 0 4px 0 rgb(12 3 20 / 0.3);
+}
+
+.choose-another:hover:not(:disabled) {
+  background: rgb(61 22 72 / 0.82);
+}
+
+.choose-another:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 rgb(12 3 20 / 0.3);
 }
 
 .player-note,

@@ -126,7 +126,8 @@ public final class RoomRealtime implements RoomStore.Listener {
         initial.playerFor(binding.identity());
         if (Set.of("SUBMIT_NAME", "GM_RESET_SUBMISSION", "GM_SHUFFLE", "GM_KICK_PLAYER",
                 "GM_MARK_GOT_IT", "GM_RESET_PLAYER_STATUS", "GM_END_GAME", "GM_CONTINUE_REVEAL",
-                "GM_PLAY_AGAIN", "GM_BACK_TO_ROOM", "GM_CLOSE_ROOM").contains(command.type())
+                "GM_PLAY_AGAIN", "GM_BACK_TO_ROOM", "GM_CLOSE_ROOM", "GM_START_LIARS_DICE",
+                "GM_END_LIARS_DICE", "GM_RESTART_LIARS_DICE").contains(command.type())
                 && !Objects.equals(initial.currentSession().map(s -> s.id().toString()).orElse(null), command.sessionId()))
             throw new DomainException(STALE_COMMAND);
         var cache = channel.requests.computeIfAbsent(binding.playerId(), ignored -> new LinkedHashMap<>());
@@ -168,6 +169,13 @@ public final class RoomRealtime implements RoomStore.Listener {
                 return;
             }
             case "GM_START_GAME" -> result = service.startWhoAmI(binding.roomId(), binding.identity());
+            case "GM_SELECT_LIARS_DICE" -> result = service.selectLiarsDice(binding.roomId(), binding.identity());
+            case "GM_START_LIARS_DICE" -> result = service.startLiarsDice(binding.roomId(), binding.identity(),
+                    UUID.fromString(command.sessionId()));
+            case "GM_END_LIARS_DICE" -> result = service.endLiarsDice(binding.roomId(), binding.identity(),
+                    UUID.fromString(command.sessionId()));
+            case "GM_RESTART_LIARS_DICE" -> result = service.restartLiarsDice(binding.roomId(), binding.identity(),
+                    UUID.fromString(command.sessionId()));
             case "SUBMIT_NAME" -> result = service.submitName(binding.roomId(), binding.identity(),
                     UUID.fromString(command.sessionId()), command.secretName());
             case "GM_RESET_SUBMISSION" -> result = service.resetSubmission(binding.roomId(), binding.identity(),
@@ -266,7 +274,8 @@ public final class RoomRealtime implements RoomStore.Listener {
             throw new DomainException(INVALID_INPUT);
         if (!Set.of("SUBMIT_NAME", "GM_RESET_SUBMISSION", "GM_KICK_PLAYER", "GM_SHUFFLE",
                 "GM_MARK_GOT_IT", "GM_RESET_PLAYER_STATUS", "GM_END_GAME", "GM_CONTINUE_REVEAL",
-                "GM_PLAY_AGAIN", "GM_BACK_TO_ROOM", "GM_CLOSE_ROOM").contains(command.type())
+                "GM_PLAY_AGAIN", "GM_BACK_TO_ROOM", "GM_CLOSE_ROOM", "GM_START_LIARS_DICE",
+                "GM_END_LIARS_DICE", "GM_RESTART_LIARS_DICE").contains(command.type())
                 && command.sessionId() != null) throw new DomainException(INVALID_INPUT);
         switch (command.type()) {
             case "JOIN_ROOM" -> {
@@ -276,7 +285,8 @@ public final class RoomRealtime implements RoomStore.Listener {
             case "RESUME_ROOM" -> {
                 if (command.nickname() != null || command.targetPlayerId() != null) throw new DomainException(INVALID_INPUT);
             }
-            case "GET_STATE", "LEAVE_ROOM", "GM_KICK_PLAYER", "GM_START_GAME", "GM_CLOSE_ROOM" -> {
+            case "GET_STATE", "LEAVE_ROOM", "GM_KICK_PLAYER", "GM_START_GAME", "GM_CLOSE_ROOM",
+                    "GM_SELECT_LIARS_DICE" -> {
                 if (command.nickname() != null || command.guestToken() != null) throw new DomainException(INVALID_INPUT);
                 if (command.type().equals("GM_KICK_PLAYER")) {
                     if (safeRequestId(command.targetPlayerId()) == null) throw new DomainException(INVALID_INPUT);
@@ -292,6 +302,10 @@ public final class RoomRealtime implements RoomStore.Listener {
                     throw new DomainException(INVALID_INPUT);
             }
             case "GM_END_GAME", "GM_CONTINUE_REVEAL", "GM_PLAY_AGAIN", "GM_BACK_TO_ROOM" -> {
+                if (command.sessionId() == null || command.nickname() != null || command.guestToken() != null
+                        || command.targetPlayerId() != null) throw new DomainException(INVALID_INPUT);
+            }
+            case "GM_START_LIARS_DICE", "GM_END_LIARS_DICE", "GM_RESTART_LIARS_DICE" -> {
                 if (command.sessionId() == null || command.nickname() != null || command.guestToken() != null
                         || command.targetPlayerId() != null) throw new DomainException(INVALID_INPUT);
             }

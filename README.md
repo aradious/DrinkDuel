@@ -8,7 +8,7 @@ DrinkDuel is a mobile-first party game for 2–20 people. V1 includes the comple
 - Spring Boot 4.1.1, Java 21, Maven Wrapper
 - Native Spring WebSocket
 - In-memory rooms and Host sessions
-- No database, Redis, Docker, or runtime 3D engine
+- No database, Redis, or runtime 3D engine
 
 ## Repository
 
@@ -16,7 +16,8 @@ DrinkDuel is a mobile-first party game for 2–20 people. V1 includes the comple
 frontend/   Angular application and static artwork
 backend/    Spring Boot API, WebSocket server, domain, and tests
 docs/       Product, architecture, design, and deployment specifications
-run-dev.bat Windows local-preview launcher
+run-dev.bat    Windows local-preview launcher
+run-docker.bat Windows production-like Compose launcher
 ```
 
 The product rules live in [PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md). See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for the production topology, configuration, reverse-proxy example, limitations, and smoke test.
@@ -56,6 +57,42 @@ npm start
 ```
 
 On macOS/Linux, use `./mvnw` in place of `mvnw.cmd`.
+
+## Running DrinkDuel
+
+### Development
+
+From the repository root on Windows:
+
+```powershell
+.\run-dev.bat
+```
+
+Open <http://localhost:4200/>. This keeps the fast Angular development server and explicitly enables the local-only Host identity adapter.
+
+### Production-like Docker
+
+Install and start Docker Desktop, then run either command from the repository root:
+
+```powershell
+.\run-docker.bat
+```
+
+```powershell
+docker compose up --build
+```
+
+Open <http://localhost/>. Nginx serves the compiled Angular application and proxies `/api` and `/ws` to the private backend container. The backend is not published directly to the host.
+
+The Compose environment uses an insecure session cookie because its documented local URL is plain HTTP. It does not activate `local-preview` or the development identity adapter. A public deployment must terminate HTTPS and set `DRINKDUEL_SECURE_COOKIES=true`.
+
+Stop the containers with:
+
+```powershell
+docker compose down
+```
+
+Rooms, games, and Host sessions remain in backend memory only. Restarting or replacing the backend container removes every active Room and game; players must create or join a new Room. Compose deliberately defines no persistence volume for this state.
 
 ## Tests and production builds
 

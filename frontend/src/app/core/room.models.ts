@@ -43,6 +43,45 @@ export interface WhoAmIGameView {
   roast: WhoAmIRoastView | null;
   reveal: WhoAmIRevealCardView[];
 }
+export type DieValue = 1 | 2 | 3 | 4 | 5 | 6;
+export type DiceHand = readonly [DieValue, DieValue, DieValue, DieValue, DieValue];
+export interface LiarsDiceHandView {
+  playerId: string;
+  dice: DiceHand;
+}
+export interface LiarsDiceFaceCountView {
+  face: DieValue;
+  rawCount: number;
+  effectiveCount: number;
+}
+interface LiarsDiceBaseView {
+  gameType: 'LIARS_DICE';
+  participantIds: string[];
+}
+export interface LiarsDiceStartView extends LiarsDiceBaseView {
+  phase: 'START';
+  participantIds: [];
+  ownDice: null;
+  revealedHands: [];
+  revealCounts: [];
+}
+export interface LiarsDicePlayingView extends LiarsDiceBaseView {
+  phase: 'PLAYING';
+  ownDice: DiceHand | null;
+  revealedHands: [];
+  revealCounts: [];
+}
+export interface LiarsDiceRevealView extends LiarsDiceBaseView {
+  phase: 'REVEAL';
+  ownDice: null;
+  revealedHands: LiarsDiceHandView[];
+  revealCounts: LiarsDiceFaceCountView[];
+}
+export type LiarsDiceGameView =
+  | LiarsDiceStartView
+  | LiarsDicePlayingView
+  | LiarsDiceRevealView;
+export type GameView = WhoAmIGameView | LiarsDiceGameView;
 export interface RoomView {
   roomId: string;
   roomRevision: number;
@@ -57,6 +96,7 @@ export interface RoomView {
   allowedActions: string[];
   players: PlayerView[];
   game?: WhoAmIGameView | null;
+  liarsDice?: LiarsDiceGameView | null;
 }
 export type Role = 'guest' | 'gm';
 export interface Attachment {

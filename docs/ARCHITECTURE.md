@@ -2,7 +2,7 @@
 
 ## Status and Authority
 
-[PRODUCT_SPEC.md](PRODUCT_SPEC.md) is the V1 product source of truth. This document defines the proposed technical design needed to implement it; it does not introduce new gameplay rules. Nothing in this document has been implemented by this documentation step.
+[PRODUCT_SPEC.md](PRODUCT_SPEC.md) is the general V1 product source of truth. [LIARS_DICE_SPEC.md](LIARS_DICE_SPEC.md) is the source of truth for Liar's Dice. This document defines the technical design needed to implement them; it does not introduce new gameplay rules.
 
 ## Stack and Deployment Boundary
 
@@ -19,7 +19,7 @@ V1 runs a single backend instance. Multiple independent instances would not shar
 
 ### Frontend
 
-Use small feature areas for identity/joining, the room, Who Am I, and reusable presentation. An Angular service owns the WebSocket connection and latest personalized snapshot, exposed through signals. Routes render server-confirmed phases; URL changes never advance the game.
+Use small feature areas for identity/joining, the room, each game, and reusable presentation. An Angular service owns the WebSocket connection and latest personalized snapshot, exposed through signals. Routes render server-confirmed phases; URL changes never advance the game.
 
 Keep nickname search, status filters, confirmations, animations, and My Clues local. Filter the existing card order without reordering on result changes. Use ordinary services and signals rather than adding a global state framework for V1.
 
@@ -29,7 +29,7 @@ Disable unavailable controls using server-provided capabilities, but enforce eve
 
 Separate transport adapters, identity checks, room application service, game rules, storage, and personalized view projection. These are responsibility boundaries, not a requirement for a class per operation.
 
-The room service handles membership, owner authorization, expiration, and session replacement. A Who Am I rules component handles submissions, assignments, results, and its phases. A view projector creates outbound DTOs. Domain objects are never serialized directly.
+The room service handles membership, owner authorization, expiration, and session replacement. Separate Who Am I and Liar's Dice rules components own their game-specific state and transitions. A view projector creates recipient-specific outbound DTOs. Domain objects are never serialized directly.
 
 Keep network connections and transport buffers outside the domain aggregate. Do not perform network I/O or identity verification while holding a room mutation lock.
 
@@ -39,7 +39,7 @@ Keep network connections and transport buffers outside the domain aggregate. Do 
 Room
   players: Player[]
   currentSession: GameSession? -> GameState
-                                  -> WhoAmIState in V1
+                                  -> WhoAmIState | LiarsDiceState in V1
 ```
 
 | Concept | Responsibility and minimum data |
@@ -47,9 +47,10 @@ Room
 | Room | Short public room ID; creation and fixed expiration instants; verified owner identity; GM player ID; ordered players; optional current session; monotonic revision; blocked guest-identity fingerprints. No Who Am I fields. |
 | Player | Stable internal player ID, nickname, avatar ID, identity binding, and derived connection state. The GM is also a Player. Identity binding is a guest credential fingerprint or a server-issued Host identity, not a nickname. |
 | GameSession | Unique session/round ID, GameType, and game-specific GameState. A new round gets a new session ID. |
-| GameType | V1 value WHO_AM_I; identifies which rules and view projector handle the session. No additional playable games in V1. |
+| GameType | V1 values WHO_AM_I and LIARS_DICE; identifies which rules and view projector handle the session. |
 | GameState | A small game-state contract/tag, not a universal model of every game's phases or fields. |
 | WhoAmIState | Phase, ordered participant IDs, submissions, assignments, result statuses, and final Roast summary when the round ends. |
+| LiarsDiceState | Game-specific phase, ordered participant IDs, and server-generated five-die hands. Aggregate counts are derived for Reveal rather than stored as separate truth. See [LIARS_DICE_SPEC.md](LIARS_DICE_SPEC.md). |
 | SubmittedName | Value record containing submitter player ID and secret text. One confirmed submission per current participant. Identify by session and submitting player, never text; identical text from different players remains distinct. |
 | WhoAmIAssignment | Value record containing recipient player ID, assigned text, original submitter ID, and submitter nickname captured for round attribution. |
 | PlayerGameStatus | PLAYING or GOT_IT. Separate from connection state and session phase. |
@@ -58,7 +59,7 @@ Room
 
 SubmittedName and WhoAmIAssignment can be records stored in maps inside WhoAmIState; they do not need repositories or independent services. Counts, joinability, and GM availability are derived, not separately maintained truth.
 
-Future games add a GameType, game-specific state, rules handler, and view projection. Room membership, ownership, expiration, and transport remain unchanged. A small handler registry is sufficient; no plugin framework or generic workflow engine is needed.
+Each game adds a GameType, game-specific state, rules handler, and view projection. Room membership, ownership, expiration, identity, and transport remain unchanged. A small typed dispatch boundary is sufficient; no plugin framework or generic workflow engine is needed.
 
 ## Lifecycle and State Ownership
 
@@ -77,11 +78,13 @@ A live Room with no currentSession is the Lobby. A Room with a currentSession de
 | ROAST | Remain until GM continues, including the all-GOT_IT success presentation. No auto-dismiss. |
 | GM continues | Enter REVEAL and expose assignments and attribution. |
 | Play Again from Reveal | Validate the new-session minimum before mutation; replace the session with fresh SUBMIT_NAME state. Keep Room, players, avatars, ID, and QR. Clear previous round data and local clues through session-ID change. |
-| Choose Another Game | From Reveal, remove the current session using the same authoritative cleanup as Back to Room, preserve Room membership, then route the GM to Choose Game. V1 needs no separate change-game command because no second game is implemented. |
+| Choose Another Game | From a game's completed state, remove the current session using the same authoritative cleanup as Back to Room, preserve Room membership, then route the GM to Choose Game. |
 | Back to Room | From Reveal, or the specified fewer-than-2 Submit Name recovery, remove the current session and return to Lobby. Joins and normal Players' voluntary Leave become available; GM has no Leave action. |
 | Close / expire | Remove Room and associated state; send terminal notification. These are terminal outcomes, not retained Room states. |
 
 New joins stay closed through Submit, Shuffle presentation, Playing, Roast, Reveal, and Play Again. Reconnecting existing members is a separate path that bypasses the new-join phase check, but never identity validation or kick revocation.
+
+Liar's Dice uses START, PLAYING, and REVEAL. Start Game atomically captures at least two connected participants, locks that roster, generates every five-die hand on the backend, and commits directly to PLAYING; any roll animation is presentation only. Kick is allowed only in START. Restart creates a new GameSession in START without rolling and preserves Room membership and identities. Detailed behavior is defined in [LIARS_DICE_SPEC.md](LIARS_DICE_SPEC.md).
 
 If a pre-Shuffle kick leaves fewer than 2 participants, disable Shuffle and show “หาเพื่อนมาอีกคนก่อนน้า 🍻”. GM can return to Lobby or close the room. After Shuffle, reduced membership/connection count never automatically terminates the round.
 
@@ -182,7 +185,7 @@ Names below are protocol design, not implemented endpoints. Actor ID and role co
 | RESUME_ROOM | Restore existing guest membership or authenticated GM; allowed in all live phases. |
 | GET_STATE | Authorized member requests their current personalized snapshot. |
 | LEAVE_ROOM | Normal Player only, Lobby only; remove membership. Reject this command from GM in every phase. |
-| GM_START_GAME | Lobby, WHO_AM_I, at least 2 active players; begin Submit Name. |
+| GM_START_GAME | Existing Who Am I selection command: Lobby, WHO_AM_I, at least 2 active players; begin Submit Name. Liar's Dice should use explicit typed selection/start operations so its pre-roll START screen cannot be confused with rolling. |
 | SUBMIT_NAME | Actor's own confirmed submission in SUBMIT_NAME; no direct edits afterward. |
 | GM_RESET_SUBMISSION | SUBMIT_NAME; clear target submission and require confirmation again. |
 | GM_KICK_PLAYER | Remove non-GM target and revoke room access; apply phase-specific cleanup. |
@@ -195,7 +198,7 @@ Names below are protocol design, not implemented endpoints. Actor ID and role co
 | GM_BACK_TO_ROOM | REVEAL or fewer-than-2 Submit Name recovery; remove session. |
 | GM_CLOSE_ROOM | Live room, owner authority, client confirmation; terminal deletion. |
 
-My Clues, search, filtering, confirmation cancellation, and tapping to skip a celebration do not send domain commands. In V1, Choose Another Game uses GM_BACK_TO_ROOM to remove the finished session, followed by frontend navigation to Choose Game. There is no separate change-game command until another game exists.
+My Clues, search, filtering, confirmation cancellation, tapping to skip a celebration, and Liar's Dice Peek/Close do not send domain commands. Choose Another Game uses GM_BACK_TO_ROOM to remove the finished session, followed by frontend navigation to Choose Game. New Liar's Dice operations must carry the current session ID and use the existing authorization, idempotency, and stale-command rules.
 
 ### Server to Client
 
@@ -220,6 +223,8 @@ Every outgoing snapshot is constructed for a verified recipient. Use allowlisted
 | Playing snapshot, including immediately after Shuffle | Other participants' assigned text, nicknames, avatars, results. Omit recipient's assigned text entirely; frontend renders ???. Omit all submitted-by attribution. The separate presentation cue contains no secrets. |
 | Roast | Final result groups and presentation data. Do not expose the recipient's secret or assignment attribution before Reveal; a minimal result-only view is sufficient. |
 | Reveal | Remaining participants' assigned text and preserved original submitter nickname, including the recipient's assignment. |
+
+For Liar's Dice PLAYING snapshots, include exactly the verified recipient's own five dice and never another participant's hand. The GM receives no additional dice visibility. In Liar's Dice REVEAL, the personalized projection may include every revealed hand plus derived raw and Wild-1 effective counts. Reconnect always rebuilds the projection from unchanged authoritative round state and never rolls.
 
 GOT_IT does not unlock the player's own secret. Redaction applies to every socket for that identity, reconnect snapshots, errors, debug outputs, and presentation cues. No all-secrets broadcast topic is exposed. Do not cache prior personalized snapshots across different authenticated identities.
 
@@ -269,6 +274,6 @@ GM absence is normally a snapshot-derived waiting state, not a technical error. 
 
 The design covers Lobby-only joining/leaving, Host-session GM reconnect, guest identity restoration, disconnected-player Shuffle blocking, owner-offline player actions, the minimum-player recovery, fixed 48-hour expiration, result corrections, Roast priority, delayed Reveal, retained kicked-submitter attribution, and round reset. Room remains game-independent.
 
-The confirmed GM exit and duplicate-submission rules are reflected in both specifications: GM has Close Room rather than voluntary Leave, temporary absence preserves ownership, and Shuffle excludes the recipient's own submission by owner identity while allowing identical text from others. No unresolved product decisions remain in the specified V1 flow.
+The confirmed GM exit and duplicate-submission rules remain reflected in the Who Am I specification: GM has Close Room rather than voluntary Leave, temporary absence preserves ownership, and Shuffle excludes the recipient's own submission by owner identity while allowing identical text from others. Liar's Dice product decisions that still require confirmation are listed explicitly in [LIARS_DICE_SPEC.md](LIARS_DICE_SPEC.md).
 
 Unnecessary complexity is excluded: no broker, delta-event reconstruction, durable history, generic game engine, separate repository for every value record, frontend state framework, or duplicate Room/game phase enums. Per-room locking, full personalized snapshots, and a small game handler boundary are sufficient for V1.

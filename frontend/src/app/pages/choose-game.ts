@@ -65,8 +65,8 @@ import { RoomClient } from '../core/room-client';
                       <button
                         class="play-game"
                         type="button"
-                        [disabled]="!client.can('GM_START_GAME')"
-                        (click)="startWhoAmI()"
+                        [disabled]="!canSelect(game.id)"
+                        (click)="selectGame(game.id)"
                       >
                         <span class="play-icon" aria-hidden="true">
                           <svg viewBox="0 0 24 24"><path d="m9 7 8 5-8 5Z"></path></svg>
@@ -76,7 +76,7 @@ import { RoomClient } from '../core/room-client';
                           <path d="m9 5 7 7-7 7"></path>
                         </svg>
                       </button>
-                      @if (!client.can('GM_START_GAME') && !client.busy()) {
+                      @if (!canSelect(game.id) && !client.busy()) {
                         <p class="start-help">At least two connected players are needed to start.</p>
                       }
                     } @else {
@@ -111,6 +111,11 @@ export class ChooseGame {
   readonly client = inject(RoomClient);
   readonly roomId = inject(ActivatedRoute).snapshot.paramMap.get('id') ?? '';
   readonly roomReady = computed(() => this.client.room()?.roomId === this.roomId);
+  readonly connectedPlayerCount = computed(
+    () =>
+      this.client.room()?.players.filter((player) => player.connectionStatus === 'CONNECTED')
+        .length ?? 0,
+  );
   readonly games = [
     {
       id: 'WHO_AM_I',
@@ -119,13 +124,29 @@ export class ChooseGame {
       metadata: ['2–20 Players', 'Talking', 'Party'],
       artwork: '/assets/drinkduel/games/who-am-i.webp',
     },
+    {
+      id: 'LIARS_DICE',
+      title: "Liar's Dice",
+      description: 'Roll in secret, bluff with confidence, and call the crew out.',
+      metadata: ['2–20 Players', 'Bluffing', 'Party'],
+      artwork: '/assets/drinkduel/games/liars-dice/liars-dice-bg.webp',
+    },
   ] as const;
 
   constructor() {
     this.client.resume(this.roomId);
   }
 
-  startWhoAmI(): void {
-    if (this.roomReady()) this.client.action('GM_START_GAME');
+  canSelect(gameId: (typeof this.games)[number]['id']): boolean {
+    if (this.connectedPlayerCount() < 2) return false;
+    return gameId === 'WHO_AM_I'
+      ? this.client.can('GM_START_GAME')
+      : this.client.can('GM_SELECT_LIARS_DICE');
+  }
+
+  selectGame(gameId: (typeof this.games)[number]['id']): void {
+    if (!this.roomReady() || !this.canSelect(gameId)) return;
+    if (gameId === 'WHO_AM_I') this.client.action('GM_START_GAME');
+    else this.client.selectLiarsDice();
   }
 }

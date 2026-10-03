@@ -2,6 +2,7 @@ package com.drinkduel.realtime;
 
 import com.drinkduel.room.*;
 import com.drinkduel.game.WhoAmIState;
+import com.drinkduel.game.LiarsDiceState;
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -16,11 +17,13 @@ public final class RoomViewFactory {
                 .map(Player::id).collect(java.util.stream.Collectors.toSet());
         actions.add("GET_STATE");
         RoomProtocol.WhoAmIView game = null;
+        RoomProtocol.LiarsDiceView liarsDice = null;
         if (room.isLobby()) {
             if (!gm) actions.add("LEAVE_ROOM");
             else if (connectedGm) {
                 actions.add("GM_KICK_PLAYER");
                 if (connected.size() >= Room.MIN_ACTIVE_PLAYERS) actions.add("GM_START_GAME");
+                actions.add("GM_SELECT_LIARS_DICE");
             }
         } else if (room.currentSession().orElseThrow().state() instanceof WhoAmIState state) {
             boolean submitting = state.phase() == WhoAmIState.Phase.SUBMIT_NAME;
@@ -68,6 +71,31 @@ public final class RoomViewFactory {
                         return new RoomProtocol.RevealCard(p.id(), p.nickname(), p.avatarId(),
                                 state.results().get(p.id()).status().name(), submission.text(), submission.submitterNickname());
                     }).toList());
+        } else if (room.currentSession().orElseThrow().state() instanceof LiarsDiceState state) {
+            if (connectedGm) {
+                if (state.phase() == LiarsDiceState.Phase.START) {
+                    actions.add("GM_KICK_PLAYER");
+                    actions.add("GM_BACK_TO_ROOM");
+                    if (connected.size() >= Room.MIN_ACTIVE_PLAYERS) actions.add("GM_START_LIARS_DICE");
+                } else if (state.phase() == LiarsDiceState.Phase.PLAYING) {
+                    actions.add("GM_END_LIARS_DICE");
+                } else if (state.phase() == LiarsDiceState.Phase.REVEAL) {
+                    actions.add("GM_RESTART_LIARS_DICE");
+                }
+            }
+            boolean playingParticipant = state.phase() == LiarsDiceState.Phase.PLAYING
+                    && state.participantIds().contains(recipient);
+            boolean reveal = state.phase() == LiarsDiceState.Phase.REVEAL;
+            liarsDice = new RoomProtocol.LiarsDiceView(state.gameType().name(), state.phase().name(),
+                    state.participantIds(), playingParticipant
+                            ? state.handForParticipant(recipient).values() : java.util.List.of(),
+                    !reveal ? java.util.List.of() : state.participantIds().stream()
+                            .map(id -> new RoomProtocol.LiarsDiceHandView(id,
+                                    state.handForParticipant(id).values())).toList(),
+                    !reveal ? java.util.List.of() : java.util.stream.IntStream.rangeClosed(1, 6)
+                            .mapToObj(face -> new RoomProtocol.LiarsDiceFaceCountView(face,
+                                    state.revealCounts().rawCount(face),
+                                    state.revealCounts().effectiveCount(face))).toList());
         }
         if (connectedGm) actions.add("GM_CLOSE_ROOM");
         return new RoomProtocol.State(new RoomProtocol.Snapshot(room.id(), room.revision(),
@@ -75,6 +103,6 @@ public final class RoomViewFactory {
                 room.isLobby() ? "LOBBY" : "IN_GAME", recipient, room.gmPlayerId(), gm,
                 Room.MAX_PLAYERS, room.isLobby() && room.players().size() < Room.MAX_PLAYERS,
                 java.util.List.copyOf(actions), room.players().stream().map(p -> new RoomProtocol.PlayerView(
-                        p.id(), p.nickname(), p.avatarId(), p.connectionState().name())).toList(), game));
+                        p.id(), p.nickname(), p.avatarId(), p.connectionState().name())).toList(), game, liarsDice));
     }
 }

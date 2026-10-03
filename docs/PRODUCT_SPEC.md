@@ -18,8 +18,10 @@ The system mainly:
 - synchronizes everyone
 - provides fun visual moments
 
-V1 contains only one playable game:
-Who Am I.
+V1 supports two games:
+
+- Who Am I, specified in this document.
+- Liar's Dice, specified in [LIARS_DICE_SPEC.md](LIARS_DICE_SPEC.md).
 
 A Room is NOT tied to a specific game.
 In the future, the GM can change games while keeping the same room and players.
@@ -214,8 +216,9 @@ players, avatars, connection state, and the permitted Kick, Leave, Close Room, a
 controls. It does not contain game-specific setup or gameplay state.
 
 Choose Game is a separate game-catalog screen for the current Room. Only the GM selects a game
-in V1. Normal Players wait for the GM. Selecting Who Am I creates its Game Session and begins the
-Submit Name phase; it does not create a new Room or replace Room membership.
+in V1. Normal Players wait for the GM. Selecting a game does not create a new Room or replace Room
+membership. Selecting Who Am I creates its Game Session and begins the Submit Name phase. The
+Liar's Dice selection and round flow follow [LIARS_DICE_SPEC.md](LIARS_DICE_SPEC.md).
 
 ## WHO AM I — START
 
@@ -528,8 +531,8 @@ GM can manage the group before starting another game/round.
 - Navigate to the separate Choose Game catalog.
 - Allow the GM to select a game again.
 
-V1 contains only Who Am I, but this action remains distinct from Play Again and Back to Room so
-future games can be added without redesigning the Lobby.
+V1 supports Who Am I and Liar's Dice. This action remains distinct from Play Again and Back to Room
+so additional games can be added without redesigning the Lobby.
 
 ### Close Room
 

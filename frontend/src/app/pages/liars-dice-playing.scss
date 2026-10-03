@@ -1,0 +1,416 @@
+:host {
+  display: block;
+  min-height: calc(100dvh - 96px);
+  isolation: isolate;
+}
+
+.scene {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 50% 67%, rgb(211 61 179 / 0.2), transparent 31%),
+    linear-gradient(110deg, rgb(22 7 31 / 0.72), rgb(31 8 43 / 0.3) 55%, rgb(18 6 27 / 0.74)),
+    url('/assets/drinkduel/games/liars-dice/liars-dice-bg.webp') center / cover no-repeat;
+}
+
+.playing-shell {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  color: #fff;
+}
+
+.game-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.game-label,
+.eyebrow,
+.room-context span {
+  color: #ffd56d;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+}
+
+.room-context,
+.role-chip {
+  border: 1px solid rgb(255 255 255 / 0.22);
+  background: rgb(42 14 51 / 0.88);
+  box-shadow: 0 4px 0 rgb(12 3 20 / 0.34);
+}
+
+.room-context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 12px;
+  border-radius: 14px;
+}
+
+.room-context strong {
+  font-size: 15px;
+  letter-spacing: 1.4px;
+}
+
+.game-heading {
+  display: grid;
+  grid-template-columns: minmax(170px, 255px) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 22px;
+  margin-bottom: 16px;
+  padding: 14px 20px;
+  border: 1px solid rgb(255 221 244 / 0.38);
+  border-radius: 26px;
+  background: linear-gradient(120deg, rgb(43 14 57 / 0.97), rgb(76 24 78 / 0.88));
+  box-shadow: 0 12px 36px rgb(18 4 29 / 0.4);
+}
+
+.game-logo {
+  display: block;
+  width: 100%;
+  height: 116px;
+  object-fit: contain;
+}
+
+.round-copy h1 {
+  margin: 0 0 6px;
+  font-size: clamp(26px, 3.4vw, 42px);
+  line-height: 1.02;
+  letter-spacing: -1.3px;
+}
+
+.round-copy p:last-child,
+.table-copy p:last-child,
+.excluded > p:last-of-type {
+  margin: 0;
+  color: #e7d8e8;
+  font-size: 14px;
+}
+
+.role-chip {
+  padding: 8px 13px;
+  color: #fff3d1;
+  font-size: 12px;
+  font-weight: 850;
+  border-radius: 999px;
+}
+
+.private-table,
+.excluded {
+  position: relative;
+  overflow: hidden;
+  min-height: min(570px, 66dvh);
+  padding: 22px 26px;
+  text-align: center;
+  border: 1px solid rgb(255 221 244 / 0.38);
+  border-radius: 30px;
+  background:
+    radial-gradient(ellipse at 50% 75%, rgb(113 36 117 / 0.7), transparent 50%),
+    linear-gradient(145deg, rgb(55 18 65 / 0.97), rgb(25 7 36 / 0.98));
+  box-shadow:
+    0 8px 0 rgb(15 3 24 / 0.42),
+    0 25px 60px rgb(10 2 17 / 0.46);
+}
+
+.private-table::before {
+  content: '';
+  position: absolute;
+  inset: auto 6% -26% 6%;
+  height: 57%;
+  border: 1px solid rgb(255 197 112 / 0.32);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #5e244f, #32142f 65%);
+  box-shadow:
+    inset 0 16px 36px rgb(255 118 203 / 0.12),
+    0 -4px 24px rgb(244 164 58 / 0.16);
+}
+
+.table-copy,
+.dice-stage,
+.end-game {
+  position: relative;
+  z-index: 1;
+}
+
+.table-copy .eyebrow,
+.excluded .eyebrow {
+  margin-bottom: 5px;
+}
+
+.table-copy h2,
+.excluded h2 {
+  margin: 0 0 5px;
+  color: #fff;
+  font-size: clamp(27px, 3vw, 38px);
+}
+
+.dice-stage {
+  display: grid;
+  place-items: end center;
+  width: min(100%, 740px);
+  min-height: 350px;
+  margin: -5px auto 42px;
+}
+
+.dice-scatter {
+  position: absolute;
+  bottom: 16px;
+  width: min(92%, 400px);
+  height: 210px;
+}
+
+.die-slot {
+  display: block;
+  position: absolute;
+  width: clamp(90px, 8vw, 108px);
+  transform: translate(-50%, -50%) rotate(var(--die-rotation));
+}
+
+.die-slot dd-die-face {
+  width: 100%;
+  animation: die-settle 0.2s ease-out both;
+}
+
+.slot-1 {
+  --die-rotation: -6deg;
+  left: 23%;
+  top: 29%;
+}
+
+.slot-2 {
+  --die-rotation: 2deg;
+  left: 50%;
+  top: 23%;
+}
+
+.slot-3 {
+  --die-rotation: 6deg;
+  left: 77%;
+  top: 30%;
+}
+
+.slot-4 {
+  --die-rotation: -3deg;
+  left: 36.5%;
+  top: 67%;
+}
+
+.slot-5 {
+  --die-rotation: 4deg;
+  left: 63.5%;
+  top: 68%;
+}
+
+.cup-control {
+  position: absolute;
+  bottom: 1px;
+  display: grid;
+  place-items: end center;
+  width: min(76vw, 400px);
+  min-height: 310px;
+  padding: 0 20px 8px;
+  color: #fff7dc;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.cup-control:hover:not(:disabled) {
+  transform: none;
+}
+
+.cup-control img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 14px rgb(8 1 14 / 0.55));
+  pointer-events: none;
+  transition: transform 0.16s ease;
+}
+
+.peeking .cup-control img {
+  transform: translateY(-170px) rotate(-4deg) scale(0.82);
+}
+
+.cup-control span {
+  position: absolute;
+  bottom: -40px;
+  z-index: 1;
+  min-width: 150px;
+  padding: 9px 14px;
+  border: 1px solid rgb(255 232 184 / 0.5);
+  border-radius: 999px;
+  background: rgb(37 10 47 / 0.86);
+  box-shadow: 0 4px 0 rgb(14 2 22 / 0.46);
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.end-game {
+  min-width: 170px;
+  min-height: 46px;
+  padding: 9px 17px;
+  color: #ffdce4;
+  font-size: 13px;
+  border: 1px solid rgb(255 158 177 / 0.52);
+  border-radius: 14px;
+  background: rgb(111 25 55 / 0.7);
+  box-shadow: 0 4px 0 rgb(36 5 20 / 0.42);
+}
+
+.excluded {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+}
+
+.excluded-icon {
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  margin-bottom: 18px;
+  color: #ffd66d;
+  font-size: 62px;
+  border: 2px solid rgb(255 213 109 / 0.54);
+  border-radius: 28px;
+  background: rgb(102 42 118 / 0.52);
+  transform: rotate(9deg);
+}
+
+.excluded .end-game {
+  margin-top: 24px;
+}
+
+.loading {
+  width: fit-content;
+  margin: 18vh auto 0;
+  padding: 18px 22px;
+  color: #fff;
+  border-radius: 18px;
+  background: rgb(42 14 51 / 0.92);
+}
+
+dialog {
+  border-color: #ffe0a1;
+  background: #fff9ee;
+}
+
+.confirm-end {
+  color: #fff;
+  background: #8f2949;
+  box-shadow: 0 5px 0 #57162e;
+}
+
+.cancel-end {
+  color: #54206b;
+  border-color: #a47ab2;
+  background: #fff;
+}
+
+@keyframes die-settle {
+  from {
+    opacity: 0;
+    transform: translateY(5px) scale(0.96);
+  }
+}
+
+@media (max-width: 700px) {
+  .game-heading {
+    grid-template-columns: 1fr auto;
+    gap: 8px 12px;
+    padding: 12px 15px;
+  }
+  .game-logo {
+    grid-column: 1 / -1;
+    width: min(100%, 240px);
+    height: 88px;
+    margin-inline: auto;
+  }
+  .round-copy h1 {
+    font-size: 25px;
+  }
+  .round-copy p:last-child {
+    font-size: 12px;
+  }
+  .private-table {
+    min-height: 520px;
+    padding-inline: 14px;
+  }
+  .dice-stage {
+    min-height: 335px;
+  }
+  .peeking .cup-control img {
+    transform: translateY(-150px) rotate(-4deg) scale(0.8);
+  }
+}
+
+@media (max-width: 480px) {
+  :host {
+    min-height: calc(100dvh - 76px);
+  }
+  .game-nav {
+    margin-bottom: 8px;
+  }
+  .game-heading {
+    margin-bottom: 10px;
+    border-radius: 21px;
+  }
+  .game-logo {
+    height: 72px;
+  }
+  .role-chip {
+    padding: 7px 10px;
+    font-size: 10px;
+  }
+  .private-table,
+  .excluded {
+    min-height: 455px;
+    padding: 16px 10px;
+    border-radius: 24px;
+  }
+  .table-copy h2 {
+    font-size: 27px;
+  }
+  .dice-stage {
+    min-height: 296px;
+  }
+  .cup-control {
+    width: min(88vw, 330px);
+    min-height: 270px;
+  }
+  .dice-scatter {
+    bottom: 12px;
+    width: min(94%, 286px);
+    height: 178px;
+  }
+  .die-slot {
+    width: clamp(58px, 17vw, 67px);
+  }
+  .peeking .cup-control img {
+    transform: translateY(-128px) rotate(-3deg) scale(0.78);
+  }
+  .end-game {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .die-slot dd-die-face {
+    animation: none;
+  }
+  .cup-control img {
+    transition: none;
+  }
+}

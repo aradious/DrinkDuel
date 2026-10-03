@@ -75,6 +75,8 @@ describe('Step 8A screens', () => {
     action: ReturnType<typeof vi.fn>;
     hostIdentityAvailable: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
+    selectLiarsDice: ReturnType<typeof vi.fn>;
+    startLiarsDice: ReturnType<typeof vi.fn>;
   };
   beforeEach(() => {
     client = {
@@ -91,6 +93,8 @@ describe('Step 8A screens', () => {
       action: vi.fn(),
       hostIdentityAvailable: vi.fn().mockResolvedValue(true),
       create: vi.fn(),
+      selectLiarsDice: vi.fn(),
+      startLiarsDice: vi.fn(),
     };
     TestBed.configureTestingModule({
       providers: [
@@ -171,8 +175,11 @@ describe('Step 8A screens', () => {
     fixture.detectChanges();
     expect(root.querySelectorAll('.player-card')).toHaveLength(1);
   });
-  it('keeps game selection GM-only and starts Who Am I through the existing command', () => {
-    client.room.set(view);
+  it('keeps both game selections GM-only and uses their authoritative commands', () => {
+    client.room.set({
+      ...view,
+      allowedActions: [...view.allowedActions, 'GM_SELECT_LIARS_DICE'],
+    });
     let fixture = TestBed.createComponent(ChooseGame);
     fixture.detectChanges();
     let root = fixture.nativeElement as HTMLElement;
@@ -182,6 +189,11 @@ describe('Step 8A screens', () => {
     );
     choose?.click();
     expect(client.action).toHaveBeenCalledWith('GM_START_GAME');
+    const liarCard = [...root.querySelectorAll('.game-card')].find((card) =>
+      card.textContent?.includes("Liar's Dice"),
+    );
+    (liarCard?.querySelector('button') as HTMLButtonElement).click();
+    expect(client.selectLiarsDice).toHaveBeenCalledOnce();
 
     client.action.mockClear();
     client.room.set({
@@ -197,6 +209,47 @@ describe('Step 8A screens', () => {
     expect(root.textContent).toContain('Waiting for Game Master');
     expect(root.textContent).not.toContain('Play This Game');
     expect(client.action).not.toHaveBeenCalled();
+    expect(client.selectLiarsDice).not.toHaveBeenCalledTimes(2);
+  });
+  it('keeps both games disabled until two connected players are present', () => {
+    client.room.set({
+      ...view,
+      allowedActions: [...view.allowedActions, 'GM_SELECT_LIARS_DICE'],
+      players: [view.players[0], { ...view.players[1], connectionStatus: 'DISCONNECTED' }],
+    });
+    const fixture = TestBed.createComponent(ChooseGame);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const cards = [...root.querySelectorAll<HTMLElement>('.game-card')];
+    const whoButton = cards.find((card) => card.textContent?.includes('Who Am I?'))!
+      .querySelector('button') as HTMLButtonElement;
+    const liarButton = cards.find((card) => card.textContent?.includes("Liar's Dice"))!
+      .querySelector('button') as HTMLButtonElement;
+    expect(whoButton.disabled).toBe(true);
+    expect(liarButton.disabled).toBe(true);
+    expect(root.textContent?.match(/At least two connected players are needed to start\./g)).toHaveLength(2);
+    liarButton.click();
+    expect(client.selectLiarsDice).not.toHaveBeenCalled();
+
+    client.room.update((room) => ({
+      ...room!,
+      roomRevision: 2,
+      players: room!.players.map((player) => ({ ...player, connectionStatus: 'CONNECTED' })),
+    }));
+    fixture.detectChanges();
+    expect(whoButton.disabled).toBe(false);
+    expect(liarButton.disabled).toBe(false);
+
+    client.room.update((room) => ({
+      ...room!,
+      roomRevision: 3,
+      players: room!.players.map((player, index) =>
+        index === 0 ? player : { ...player, connectionStatus: 'DISCONNECTED' },
+      ),
+    }));
+    fixture.detectChanges();
+    expect(whoButton.disabled).toBe(true);
+    expect(liarButton.disabled).toBe(true);
   });
   it('GM absence is a friendly waiting state and names render as text', async () => {
     client.room.set({

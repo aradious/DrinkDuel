@@ -77,6 +77,34 @@ class WhoAmIRealtimeTests {
             assertTrue(client.state().allowedActions().contains("SUBMIT_NAME"));
             assertFalse(client.state().allowedActions().contains("LEAVE_ROOM"));
         }
+        assertTrue(gm.client.state().allowedActions().contains("GM_BACK_TO_ROOM"));
+        assertFalse(guest.client.state().allowedActions().contains("GM_BACK_TO_ROOM"));
+    }
+
+    @Test void gmBackToRoomFromSubmitBroadcastsLobbyAndAReselectedRoundIsClean() {
+        open();
+        UUID abandonedRound = sessionId();
+        submit(gm, "SECRET-GM-ABANDONED");
+        submit(guest, "SECRET-GUEST-ABANDONED");
+
+        realtime.command(gm.connection, command("GM_BACK_TO_ROOM", null, null, null));
+
+        for (var client : List.of(gm.client, guest.client)) {
+            assertEquals("LOBBY", client.state().lifecycle());
+            assertNull(client.state().sessionId());
+            assertNull(client.state().game());
+            assertEquals(2, client.state().players().size());
+        }
+        assertTrue(gm.client.result().accepted());
+
+        open();
+        assertNotEquals(abandonedRound, sessionId());
+        for (var client : List.of(gm.client, guest.client)) {
+            assertEquals("SUBMIT_NAME", client.state().game().phase());
+            assertEquals(0, client.state().game().submittedCount());
+            assertFalse(client.state().game().currentPlayerSubmitted());
+        }
+        assertNoSecrets("SECRET-GM-ABANDONED", "SECRET-GUEST-ABANDONED");
     }
 
     @Test void submissionProgressAndFutureShufflePermissionAreSafeForEveryRecipient() {

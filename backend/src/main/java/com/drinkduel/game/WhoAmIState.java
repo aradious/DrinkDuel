@@ -171,7 +171,7 @@ public final class WhoAmIState implements GameState {
     }
 
     public boolean canBackToRoom() {
-        return phase == Phase.REVEAL || (phase == Phase.SUBMIT_NAME && participantIds.size() < 2);
+        return phase == Phase.REVEAL || phase == Phase.SUBMIT_NAME;
     }
 
     private void requireParticipant(UUID playerId) {

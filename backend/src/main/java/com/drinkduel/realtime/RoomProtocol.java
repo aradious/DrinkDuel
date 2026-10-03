@@ -30,7 +30,7 @@ public final class RoomProtocol {
     public record Snapshot(String roomId, long roomRevision, String expiresAt, UUID sessionId,
                            String lifecycle, UUID currentPlayerId, UUID gmPlayerId, boolean isGm,
                            int capacity, boolean joinable, List<String> allowedActions,
-                           List<PlayerView> players, WhoAmIView game) {}
+                           List<PlayerView> players, WhoAmIView game, LiarsDiceView liarsDice) {}
     public record WhoAmIView(String gameType, String phase, List<ParticipantView> participants,
                              int submittedCount, int participantCount, boolean currentPlayerSubmitted,
                              boolean readyForShuffle, boolean canShuffle, List<GameCard> cards,
@@ -45,6 +45,22 @@ public final class RoomProtocol {
     /** Reset guard is metadata for GM only; it never contains submitted text. */
     public record ParticipantView(UUID playerId, boolean submitted, UUID resetSubmissionId) {}
     public record PlayerView(UUID playerId, String nickname, int avatarId, String connectionStatus) {}
+    public record LiarsDiceView(String gameType, String phase, List<UUID> participantIds,
+                                List<Integer> ownDice, List<LiarsDiceHandView> revealedHands,
+                                List<LiarsDiceFaceCountView> revealCounts) {
+        public LiarsDiceView {
+            participantIds = List.copyOf(participantIds);
+            ownDice = List.copyOf(ownDice);
+            revealedHands = List.copyOf(revealedHands);
+            revealCounts = List.copyOf(revealCounts);
+        }
+        @Override public String toString() { return "LiarsDiceView[redacted]"; }
+    }
+    public record LiarsDiceHandView(UUID playerId, List<Integer> dice) {
+        public LiarsDiceHandView { dice = List.copyOf(dice); }
+        @Override public String toString() { return "LiarsDiceHandView[redacted]"; }
+    }
+    public record LiarsDiceFaceCountView(int face, int rawCount, int effectiveCount) {}
     public record Result(String type, String requestId, boolean accepted, String code,
                          Long roomRevision) implements Message {
         public Result(String requestId, boolean accepted, String code, Long revision) {

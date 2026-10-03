@@ -173,14 +173,29 @@ class WhoAmILifecycleTests {
         service.leaveRoom(room.id(), added.identity());
         assertEquals(before.players(), current().players());
     }
-    @Test void submitRecoveryOnlyWhenFewerThanTwoParticipants() {
+    @Test void backToRoomFromSubmitClearsRoundAndReselectionStartsClean() {
         reveal();
         service.playAgain(room.id(), room.owner(), session());
-        error(INVALID_GAME_PHASE, () -> service.backToRoom(room.id(), room.owner(), session()));
-        service.kickPlayer(room.id(), room.owner(), player);
-        service.backToRoom(room.id(), room.owner(), session());
+        UUID abandonedRound = session();
+        service.submitName(room.id(), room.owner(), abandonedRound, "Abandoned GM secret");
+        service.submitName(room.id(), guest.identity(), abandonedRound, "Abandoned guest secret");
+        Room before = current();
+
+        service.backToRoom(room.id(), room.owner(), abandonedRound);
+
         assertTrue(current().isLobby());
-        assertEquals(1, current().players().size());
+        assertTrue(current().currentSession().isEmpty());
+        assertEquals(before.players(), current().players());
+        assertEquals(before.id(), current().id());
+        assertEquals(before.expiresAt(), current().expiresAt());
+
+        service.startWhoAmI(room.id(), room.owner());
+        assertNotEquals(abandonedRound, session());
+        assertEquals(SUBMIT_NAME, state().phase());
+        assertEquals(before.players().stream().map(Player::id).toList(), state().participantIds());
+        assertTrue(state().submissions().isEmpty());
+        assertTrue(state().assignments().isEmpty());
+        assertTrue(state().results().isEmpty());
     }
     @ParameterizedTest @CsvSource({"ROAST", "REVEAL"})
     void kickPreservesOtherAssignmentAndCreatorDuringPostgame(String phase) {
