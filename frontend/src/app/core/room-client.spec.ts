@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BROWSER } from './browser';
+import { BROWSER, createRequestId } from './browser';
 import { RoomClient } from './room-client';
 import { RoomView, friendlyError } from './room.models';
 
@@ -108,13 +108,15 @@ describe('RoomClient', () => {
   let client: RoomClient,
     sockets: Socket[],
     fetchMock: ReturnType<typeof vi.fn>,
-    navigate: ReturnType<typeof vi.fn>;
+    navigate: ReturnType<typeof vi.fn>,
+    requestId: () => string;
   beforeEach(() => {
     vi.useFakeTimers();
     localStorage.clear();
     sockets = [];
     fetchMock = vi.fn();
     navigate = vi.fn().mockResolvedValue(true);
+    requestId = () => crypto.randomUUID();
     TestBed.configureTestingModule({
       providers: [
         RoomClient,
@@ -125,7 +127,7 @@ describe('RoomClient', () => {
             storage: localStorage,
             origin: 'http://localhost:4200',
             request: fetchMock,
-            requestId: () => crypto.randomUUID(),
+            requestId: () => requestId(),
             randomToken: () => 'A'.repeat(43),
             socket: () => {
               const socket = new Socket();
@@ -161,6 +163,25 @@ describe('RoomClient', () => {
     socket.reply(false, 'NOT_AUTHORIZED');
     expect(socket.sent[1]['type']).toBe('JOIN_ROOM');
     expect(socket.sent[1]['guestToken']).toBe(socket.sent[0]['guestToken']);
+  });
+  it('sends RESUME_ROOM when crypto exists without randomUUID', () => {
+    localStorage.setItem('drinkduel.rooms', '{"ABC234":"guest"}');
+    let value = 0;
+    requestId = () =>
+      createRequestId({
+        getRandomValues: (array: Uint8Array) => {
+          array.fill(value++);
+          return array;
+        },
+      } as unknown as Crypto);
+    client.resume('ABC234');
+    const socket = sockets[0];
+    socket.open();
+    expect(socket.sent[0]).toMatchObject({ type: 'RESUME_ROOM', roomId: 'ABC234' });
+    expect(socket.sent[0]['requestId']).toMatch(/^[0-9a-f-]{36}$/);
+    socket.emit({ type: 'STATE', room: snapshot() });
+    socket.reply(true);
+    expect(client.connection()).toBe('connected');
   });
   it('accepts authoritative updates and ignores older revisions', () => {
     const socket = attach();

@@ -1,6 +1,7 @@
 import { Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import QRCode from 'qrcode';
+import { copyText } from '../core/clipboard';
 import { RoomClient } from '../core/room-client';
 import { Avatar } from '../shared/avatar';
 import { WhoAmISubmit } from './who-am-i-submit';
@@ -287,10 +288,9 @@ export class Lobby {
     });
   }
   async copy(code: string): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(code);
+    if (await copyText(code)) {
       this.copied.set(true);
-    } catch {
+    } else {
       this.client.notice.set('Select the room code above to copy it.');
     }
   }
