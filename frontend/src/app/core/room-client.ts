@@ -402,6 +402,13 @@ export class RoomClient {
           this.terminal.set('UNAVAILABLE');
           this.forgetRoom();
         }
+        if (
+          !this.navigateAfterAttach &&
+          this.attachment &&
+          ['PLAYER_KICKED', 'ROOM_EXPIRED', 'ROOM_NOT_FOUND'].includes(message.code ?? '')
+        ) {
+          void this.router.navigate(['/room', this.attachment.roomId]);
+        }
         this.stopSocket();
         this.connection.set('stopped');
       }

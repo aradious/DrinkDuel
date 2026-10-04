@@ -18,6 +18,7 @@ backend/    Spring Boot API, WebSocket server, domain, and tests
 docs/       Product, architecture, design, and deployment specifications
 run-dev.bat    Windows local-preview launcher
 run-docker.bat Windows production-like Compose launcher
+build-standalone.bat Windows standalone JAR builder
 ```
 
 The product rules live in [PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md). See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for the production topology, configuration, reverse-proxy example, limitations, and smoke test.
@@ -93,6 +94,16 @@ docker compose down
 ```
 
 Rooms, games, and Host sessions remain in backend memory only. Restarting or replacing the backend container removes every active Room and game; players must create or join a new Room. Compose deliberately defines no persistence volume for this state.
+
+### Standalone JAR build
+
+Build the Angular production application and package it inside one executable Spring Boot JAR:
+
+```powershell
+.\build-standalone.bat
+```
+
+The generated artifact is `release/drinkduel.jar`. The build uses the existing Angular and Spring Boot source trees; generated frontend files and the release JAR remain untracked. Run the artifact with Java 21 and the normal production configuration. For local plain-HTTP testing only, set `DRINKDUEL_SECURE_COOKIES=false`; public HTTPS must keep secure cookies enabled.
 
 ## Tests and production builds
 

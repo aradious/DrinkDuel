@@ -86,4 +86,18 @@
 		</plugins>
 	</build>
 
+	<profiles>
+		<profile>
+			<id>standalone</id>
+			<build>
+				<resources combine.children="append">
+					<resource>
+						<directory>../frontend/dist/drinkduel/browser</directory>
+						<targetPath>static</targetPath>
+					</resource>
+				</resources>
+			</build>
+		</profile>
+	</profiles>
+
 </project>

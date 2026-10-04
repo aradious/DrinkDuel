@@ -562,6 +562,17 @@ describe('RoomClient', () => {
     expect(client.room()?.players.map((p) => p.avatarId)).toEqual([1, 25]);
     expect(navigate).not.toHaveBeenCalled();
   });
+  it('routes failed deep-link resume to the room recovery screen', () => {
+    localStorage.setItem('drinkduel.rooms', '{"ABC234":"guest"}');
+    client.resume('ABC234');
+    const socket = sockets.at(-1)!;
+    socket.open();
+    socket.reply(false, 'ROOM_NOT_FOUND');
+    expect(client.room()).toBeNull();
+    expect(client.terminal()).toBe('UNAVAILABLE');
+    expect(client.connection()).toBe('stopped');
+    expect(navigate).toHaveBeenLastCalledWith(['/room', 'ABC234']);
+  });
   it('kicked tokens are retained and never replaced to bypass the kick', () => {
     const socket = attach();
     const token = localStorage.getItem('drinkduel.guest');
