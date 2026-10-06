@@ -10,7 +10,7 @@ import { Avatar } from '../shared/avatar';
     @if (client.room(); as room) {
       <main class="reveal-page page-enter">
         <header class="reveal-header">
-          <img src="/assets/drinkduel/games/who-am-i-logo.webp" width="2170" height="725" alt="Who Am I?" />
+          <img src="assets/drinkduel/games/who-am-i-logo.webp" width="2170" height="725" alt="Who Am I?" />
           <div class="reveal-copy"><p class="eyebrow">THE BIG REVEAL</p><h1>So… who was everyone?</h1><p>Secrets out. Here's who everyone had.</p></div>
           <div class="room-context" aria-label="Current room"><span>ROOM</span><strong>{{ room.roomId }}</strong></div>
         </header>

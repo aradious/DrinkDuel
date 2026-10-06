@@ -23,7 +23,7 @@ describe('DieFace', () => {
       const image = die.querySelector('img.die-art')!;
       expect(die.getAttribute('data-face')).toBe(String(face));
       expect(image.getAttribute('src')).toBe(
-        `/assets/drinkduel/games/liars-dice/dice/dice-${face}.png`,
+        `assets/drinkduel/games/liars-dice/dice/dice-${face}.png`,
       );
       expect(image.getAttribute('aria-label')).toBe(`Die showing ${face}`);
       expect(image.getAttribute('alt')).toBe('');

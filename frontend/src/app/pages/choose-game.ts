@@ -122,14 +122,14 @@ export class ChooseGame {
       title: 'Who Am I?',
       description: 'Guess the name everyone can see but you.',
       metadata: ['2–20 Players', 'Talking', 'Party'],
-      artwork: '/assets/drinkduel/games/who-am-i.webp',
+      artwork: 'assets/drinkduel/games/who-am-i.webp',
     },
     {
       id: 'LIARS_DICE',
       title: "Liar's Dice",
       description: 'Roll in secret, bluff with confidence, and call the crew out.',
       metadata: ['2–20 Players', 'Bluffing', 'Party'],
-      artwork: '/assets/drinkduel/games/liars-dice/liars-dice-bg.webp',
+      artwork: 'assets/drinkduel/games/liars-dice/liars-dice-bg.webp',
     },
   ] as const;
 

@@ -13,7 +13,7 @@ import { Avatar } from '../shared/avatar';
       @if (room.game; as game) {
         <main class="playing-page page-enter">
           <header class="playing-header">
-            <img src="/assets/drinkduel/games/who-am-i-logo.webp" width="2170" height="725" alt="Who Am I?" />
+            <img src="assets/drinkduel/games/who-am-i-logo.webp" width="2170" height="725" alt="Who Am I?" />
             <div class="round-copy">
               <p class="eyebrow">ROUND IS ON!</p>
               <h1>Talk, ask, guess… Who are you?</h1>

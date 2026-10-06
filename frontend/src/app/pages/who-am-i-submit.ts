@@ -14,7 +14,7 @@ import { Avatar } from '../shared/avatar';
           <header class="game-header">
             <div class="brand-block">
               <img
-                src="/assets/drinkduel/games/who-am-i-logo.webp"
+                src="assets/drinkduel/games/who-am-i-logo.webp"
                 width="2170"
                 height="725"
                 alt="Who Am I?"

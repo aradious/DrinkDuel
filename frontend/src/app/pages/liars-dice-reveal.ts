@@ -23,7 +23,7 @@ import { DieFace } from '../shared/die-face';
           <header class="game-heading">
             <img
               class="game-logo"
-              src="/assets/drinkduel/games/liars-dice/liars-dice-logo.png"
+              src="assets/drinkduel/games/liars-dice/liars-dice-logo.png"
               width="1536"
               height="1024"
               alt="Liar's Dice"

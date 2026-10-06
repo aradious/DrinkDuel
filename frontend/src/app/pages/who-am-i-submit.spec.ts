@@ -72,7 +72,7 @@ describe('WhoAmISubmit', () => {
     expect(root.textContent).toContain('Ken');
     expect(root.textContent).toContain('Submitted');
     expect(root.querySelectorAll('dd-avatar')).toHaveLength(2);
-    expect(root.querySelector('img[src="/assets/drinkduel/games/who-am-i-logo.webp"]')).not.toBeNull();
+    expect(root.querySelector('img[src="assets/drinkduel/games/who-am-i-logo.webp"]')).not.toBeNull();
     expect(root.textContent).not.toContain('submission-1');
   });
 

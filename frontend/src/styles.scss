@@ -651,12 +651,12 @@ body:has(.lobby)::before {
 body:has(.home)::before {
   background-image:
     linear-gradient(#180b2b45, #180b2b65),
-    url('/assets/drinkduel/backgrounds/cafe-home-mobile.webp');
+    url('assets/drinkduel/backgrounds/cafe-home-mobile.webp');
 }
 body:has(.lobby)::before {
   background-image:
     linear-gradient(#180b2b30, #180b2b40),
-    url('/assets/drinkduel/backgrounds/cafe-room.webp');
+    url('assets/drinkduel/backgrounds/cafe-room.webp');
 }
 .site-shell:has(.home),
 .site-shell:has(.lobby) {
@@ -831,11 +831,11 @@ body:has(.lobby)::before {
 @media (min-width: 760px) {
   body:has(.home)::before {
     background-image:
-      linear-gradient(#180b2b25, #180b2b45), url('/assets/drinkduel/backgrounds/cafe-home.webp');
+      linear-gradient(#180b2b25, #180b2b45), url('assets/drinkduel/backgrounds/cafe-home.webp');
   }
   body:has(.lobby)::before {
     background-image:
-      linear-gradient(#180b2b25, #180b2b35), url('/assets/drinkduel/backgrounds/cafe-room.webp');
+      linear-gradient(#180b2b25, #180b2b35), url('assets/drinkduel/backgrounds/cafe-room.webp');
   }
   .site-shell:has(.home),
   .site-shell:has(.lobby) {

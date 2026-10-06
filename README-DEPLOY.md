@@ -6,9 +6,9 @@ Deploy `drinkduel.jar` with Java 21. The application listens on port `8080` by d
 
 | Path | Service |
 |---|---|
-| `/` | Angular frontend and client routes |
-| `/api` | REST backend |
-| `/ws` | WebSocket realtime transport |
+| `/` | Angular frontend and client routes in a root build |
+| `/api` | REST backend in a root build |
+| `/ws` | WebSocket realtime transport in a root build |
 | `/actuator/health` | Health check |
 
 The runtime does not require Node.js, npm, Angular CLI, Docker, Nginx, a database, or Redis. A reverse proxy is optional when the deployment platform already supplies HTTPS and routing.
@@ -39,13 +39,43 @@ Spring Boot's standard `SERVER_PORT` setting can change the default port when re
 
 DrinkDuel is not tied to a specific hostname. The deployment team may assign its own domain or subdomain, such as the conceptual `https://drinkduel.example.com`. Changing the hostname does not require rebuilding Angular.
 
-The browser uses same-origin paths:
+The browser uses same-origin paths derived from the Angular build's base href:
 
-- REST requests use `/api`.
-- Realtime connections use `/ws`.
+- A root build uses `/api` and `/ws`.
+- A `/drinkduel/` build uses `/drinkduel/api` and `/drinkduel/ws` publicly.
 - The client selects `ws://` for HTTP and `wss://` for HTTPS.
+- Angular assets, router links, REST requests, WebSocket connections, and QR join links all use the same configured public base path.
 
 Public deployments should use HTTPS so the default secure Host session cookie works correctly.
+
+## Configurable public base path
+
+`APP_BASE_PATH` is a build-time setting for the standalone artifact. It must start and end with `/`. The default is `/`, so existing root and Docker deployments remain unchanged.
+
+Build a root standalone JAR:
+
+```powershell
+Remove-Item Env:APP_BASE_PATH -ErrorAction SilentlyContinue
+.\build-standalone.bat
+```
+
+Build the standalone JAR for `https://app.kook.in.th/drinkduel/`:
+
+```powershell
+$env:APP_BASE_PATH = "/drinkduel/"
+.\build-standalone.bat
+```
+
+The second build writes `<base href="/drinkduel/">` into the packaged Angular shell. It also causes the browser to request assets, REST, WebSocket, SPA routes, and generated join links beneath `/drinkduel/`. The internal Spring endpoints remain `/api` and `/ws`.
+
+Docker continues to build with its existing root base href. No Compose variable is required:
+
+```powershell
+docker compose build
+docker compose up -d
+```
+
+Do not reuse a `/drinkduel/` JAR at a root public URL, or a root JAR at `/drinkduel/`; the public base path is part of the Angular build.
 
 ## Reverse proxy or load balancer
 
@@ -56,6 +86,18 @@ If TLS terminates at a load balancer, Nginx, Apache, Ingress, or another proxy, 
 - forward the original host and request scheme using trusted forwarding headers;
 - support HTTP Upgrade for `/ws` WebSocket connections; and
 - avoid sending `/api`, `/ws`, or `/actuator` requests through an external SPA fallback.
+
+For a subpath standalone deployment, the proxy must strip the public prefix before forwarding to the JAR:
+
+| Public request | JAR upstream request |
+|---|---|
+| `/drinkduel/` | `/` |
+| `/drinkduel/main-*.js` | `/main-*.js` |
+| `/drinkduel/room/ABC123` | `/room/ABC123` |
+| `/drinkduel/api/rooms` | `/api/rooms` |
+| `/drinkduel/ws/rooms` | `/ws/rooms` |
+
+The `/drinkduel/ws/` route must preserve HTTP Upgrade and use a WebSocket-capable proxy configuration. Deep frontend routes must be forwarded after stripping the prefix so the JAR's SPA fallback can return its packaged `index.html`. API and WebSocket routes must never be rewritten to that SPA fallback.
 
 Conceptual topology:
 

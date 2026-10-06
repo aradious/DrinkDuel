@@ -17,11 +17,21 @@ if not exist "%~dp0backend\mvnw.cmd" (
   exit /b 1
 )
 
-echo [1/3] Building the Angular production application...
+if not defined APP_BASE_PATH set "APP_BASE_PATH=/"
+if not "%APP_BASE_PATH:~0,1%"=="/" (
+  echo APP_BASE_PATH must start with / and end with /.
+  exit /b 1
+)
+if not "%APP_BASE_PATH:~-1%"=="/" (
+  echo APP_BASE_PATH must start with / and end with /.
+  exit /b 1
+)
+
+echo [1/3] Building the Angular production application for %APP_BASE_PATH%...
 pushd "%~dp0frontend"
 call npm.cmd ci
 if not "%ERRORLEVEL%"=="0" goto frontend_failed
-call npm.cmd run build
+call npm.cmd run build -- --base-href "%APP_BASE_PATH%"
 if not "%ERRORLEVEL%"=="0" goto frontend_failed
 popd
 

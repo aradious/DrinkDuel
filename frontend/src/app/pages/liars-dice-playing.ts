@@ -31,7 +31,7 @@ import { DieFace } from '../shared/die-face';
           <header class="game-heading">
             <img
               class="game-logo"
-              src="/assets/drinkduel/games/liars-dice/liars-dice-logo.png"
+              src="assets/drinkduel/games/liars-dice/liars-dice-logo.png"
               width="1536"
               height="1024"
               alt="Liar's Dice"
@@ -167,8 +167,8 @@ export class LiarsDicePlaying implements OnDestroy {
     const game = this.room()?.liarsDice;
     return game?.phase === 'PLAYING' ? game.participantIds.length : 0;
   });
-  readonly closedCup = '/assets/drinkduel/games/liars-dice/dice-cup.png';
-  readonly openCup = '/assets/drinkduel/games/liars-dice/dice-cup-open.png';
+  readonly closedCup = 'assets/drinkduel/games/liars-dice/dice-cup.png';
+  readonly openCup = 'assets/drinkduel/games/liars-dice/dice-cup-open.png';
 
   constructor() {
     this.client.resume(this.roomId);

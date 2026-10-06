@@ -126,6 +126,7 @@ describe('RoomClient', () => {
           useValue: {
             storage: localStorage,
             origin: 'http://localhost:4200',
+            basePath: '/',
             request: fetchMock,
             requestId: () => requestId(),
             randomToken: () => 'A'.repeat(43),

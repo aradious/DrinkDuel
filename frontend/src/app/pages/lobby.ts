@@ -2,6 +2,7 @@ import { Component, ElementRef, computed, effect, inject, signal, viewChild } fr
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import QRCode from 'qrcode';
 import { copyText } from '../core/clipboard';
+import { BROWSER, publicPath } from '../core/browser';
 import { RoomClient } from '../core/room-client';
 import { Avatar } from '../shared/avatar';
 import { WhoAmISubmit } from './who-am-i-submit';
@@ -18,7 +19,7 @@ import { WhoAmIReveal } from './who-am-i-reveal';
           <aside class="lobby-visual">
             <img
               class="lobby-logo"
-              src="/assets/drinkduel/brand/drinkduel-logo.webp"
+              src="assets/drinkduel/brand/drinkduel-logo.webp"
               width="516"
               height="198"
               alt="DrinkDuel"
@@ -30,7 +31,7 @@ import { WhoAmIReveal } from './who-am-i-reveal';
             </div>
             <img
               class="lobby-mascot"
-              src="/assets/drinkduel/characters/mascot-lobby.webp"
+              src="assets/drinkduel/characters/mascot-lobby.webp"
               width="620"
               height="640"
               alt=""
@@ -130,7 +131,9 @@ import { WhoAmIReveal } from './who-am-i-reveal';
               <div class="game-preview-copy">
                 <span class="game-icon" aria-hidden="true">
                   <svg viewBox="0 0 28 28">
-                    <path d="M8.3 8.4h11.4c3.2 0 5.6 2.5 5.6 5.7v4.1c0 2.1-1.2 3.5-2.9 3.5-1.3 0-2.2-.8-3.2-2.3l-1-1.5H9.8l-1 1.5c-1 1.5-1.9 2.3-3.2 2.3-1.7 0-2.9-1.4-2.9-3.5v-4.1c0-3.2 2.4-5.7 5.6-5.7Z"></path>
+                    <path
+                      d="M8.3 8.4h11.4c3.2 0 5.6 2.5 5.6 5.7v4.1c0 2.1-1.2 3.5-2.9 3.5-1.3 0-2.2-.8-3.2-2.3l-1-1.5H9.8l-1 1.5c-1 1.5-1.9 2.3-3.2 2.3-1.7 0-2.9-1.4-2.9-3.5v-4.1c0-3.2 2.4-5.7 5.6-5.7Z"
+                    ></path>
                     <path d="M8.2 11.7v4.6M5.9 14h4.6M18.8 12.7h.1M21.5 15.2h.1"></path>
                   </svg>
                 </span>
@@ -152,9 +155,7 @@ import { WhoAmIReveal } from './who-am-i-reveal';
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"></path></svg>
                 </a>
               } @else {
-                <p class="player-waiting" role="status">
-                  Waiting for Game Master…
-                </p>
+                <p class="player-waiting" role="status">Waiting for Game Master…</p>
               }
             </section>
 
@@ -261,6 +262,7 @@ import { WhoAmIReveal } from './who-am-i-reveal';
 })
 export class Lobby {
   readonly client = inject(RoomClient);
+  private readonly browser = inject(BROWSER);
   private readonly route = inject(ActivatedRoute);
   readonly qr = signal('');
   readonly copied = signal(false);
@@ -278,11 +280,17 @@ export class Lobby {
     effect(() => {
       const id = this.client.room()?.roomId;
       if (id)
-        void QRCode.toDataURL(location.origin + '/join?room=' + encodeURIComponent(id), {
-          width: 232,
-          margin: 1,
-          color: { dark: '#34283d', light: '#fffdf8' },
-        })
+        void QRCode.toDataURL(
+          new URL(
+            `${publicPath(this.browser.basePath, 'join')}?room=${encodeURIComponent(id)}`,
+            this.browser.origin,
+          ).toString(),
+          {
+            width: 232,
+            margin: 1,
+            color: { dark: '#34283d', light: '#fffdf8' },
+          },
+        )
           .then((url) => this.qr.set(url))
           .catch(() => this.qr.set(''));
     });

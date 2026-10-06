@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { BROWSER } from './browser';
+import { BROWSER, publicPath, webSocketUrl } from './browser';
 import { Attachment, RoomView, friendlyError, roomCode } from './room.models';
 import { normalizeLiarsDiceView } from './liars-dice-state';
 
@@ -79,7 +79,7 @@ export class RoomClient {
   async hostIdentityAvailable(): Promise<boolean> {
     try {
       return (
-        await this.browser.request('/api/host/session', {
+        await this.browser.request(publicPath(this.browser.basePath, 'api/host/session'), {
           cache: 'no-store',
           credentials: 'same-origin',
         })
@@ -93,13 +93,16 @@ export class RoomClient {
     this.busy.set(true);
     this.notice.set('');
     try {
-      const login = await this.browser.request('/api/host/session', {
-        method: 'POST',
-        credentials: 'same-origin',
-      });
+      const login = await this.browser.request(
+        publicPath(this.browser.basePath, 'api/host/session'),
+        {
+          method: 'POST',
+          credentials: 'same-origin',
+        },
+      );
       if (!login.ok)
         throw new Error('Room creation is unavailable. Check your connection and try again.');
-      const response = await this.browser.request('/api/rooms', {
+      const response = await this.browser.request(publicPath(this.browser.basePath, 'api/rooms'), {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
@@ -167,7 +170,9 @@ export class RoomClient {
     this.connection.set(reconnect ? 'reconnecting' : 'connecting');
     this.busy.set(true);
     this.attaching = true;
-    const socket = this.browser.socket(this.browser.origin.replace(/^http/, 'ws') + '/ws/rooms');
+    const socket = this.browser.socket(
+      webSocketUrl(this.browser.origin, this.browser.basePath, 'ws/rooms'),
+    );
     this.socket = socket;
     this.armTimeout();
     socket.onopen = () => {

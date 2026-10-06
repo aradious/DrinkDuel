@@ -2,12 +2,12 @@ import { Component, computed, input } from '@angular/core';
 import { DieValue } from '../core/room.models';
 
 const DICE_ASSETS: Record<DieValue, string> = {
-  1: '/assets/drinkduel/games/liars-dice/dice/dice-1.png',
-  2: '/assets/drinkduel/games/liars-dice/dice/dice-2.png',
-  3: '/assets/drinkduel/games/liars-dice/dice/dice-3.png',
-  4: '/assets/drinkduel/games/liars-dice/dice/dice-4.png',
-  5: '/assets/drinkduel/games/liars-dice/dice/dice-5.png',
-  6: '/assets/drinkduel/games/liars-dice/dice/dice-6.png',
+  1: 'assets/drinkduel/games/liars-dice/dice/dice-1.png',
+  2: 'assets/drinkduel/games/liars-dice/dice/dice-2.png',
+  3: 'assets/drinkduel/games/liars-dice/dice/dice-3.png',
+  4: 'assets/drinkduel/games/liars-dice/dice/dice-4.png',
+  5: 'assets/drinkduel/games/liars-dice/dice/dice-5.png',
+  6: 'assets/drinkduel/games/liars-dice/dice/dice-6.png',
 };
 
 @Component({

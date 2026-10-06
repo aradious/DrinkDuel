@@ -11,7 +11,7 @@ import { Avatar } from '../shared/avatar';
       @if (target(); as player) {
         <main class="roast-page page-enter">
           <header class="roast-header">
-            <img src="/assets/drinkduel/games/who-am-i-logo.webp" width="2170" height="725" alt="Who Am I?" />
+            <img src="assets/drinkduel/games/who-am-i-logo.webp" width="2170" height="725" alt="Who Am I?" />
             <div class="room-context" aria-label="Current room"><span>ROOM</span><strong>{{ room.roomId }}</strong></div>
           </header>
 

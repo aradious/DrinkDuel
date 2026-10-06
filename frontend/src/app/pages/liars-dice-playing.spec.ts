@@ -119,7 +119,7 @@ describe("Liar's Dice PLAYING screen", () => {
       ),
     ).toEqual(
       [1, 2, 3, 4, 6].map(
-        (face) => `/assets/drinkduel/games/liars-dice/dice/dice-${face}.png`,
+        (face) => `assets/drinkduel/games/liars-dice/dice/dice-${face}.png`,
       ),
     );
   });
@@ -156,7 +156,7 @@ describe("Liar's Dice PLAYING screen", () => {
       ),
     ).toEqual(
       [1, 2, 3, 4, 5].map(
-        (face) => `/assets/drinkduel/games/liars-dice/dice/dice-${face}.png`,
+        (face) => `assets/drinkduel/games/liars-dice/dice/dice-${face}.png`,
       ),
     );
   });
