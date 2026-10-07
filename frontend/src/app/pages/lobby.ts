@@ -2,7 +2,7 @@ import { Component, ElementRef, computed, effect, inject, signal, viewChild } fr
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import QRCode from 'qrcode';
 import { copyText } from '../core/clipboard';
-import { BROWSER, publicPath } from '../core/browser';
+import { BROWSER, joinRoomUrl } from '../core/browser';
 import { RoomClient } from '../core/room-client';
 import { Avatar } from '../shared/avatar';
 import { WhoAmISubmit } from './who-am-i-submit';
@@ -52,13 +52,22 @@ import { WhoAmIReveal } from './who-am-i-reveal';
                 <p class="eyebrow" id="room-code-label">ROOM CODE</p>
                 <p class="room-code">{{ room.roomId }}</p>
                 <p class="support">Send the code. Gather the crew.</p>
-                <button class="copy-code" (click)="copy(room.roomId)">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="8" y="8" width="11" height="11" rx="2"></rect>
-                    <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
-                  </svg>
-                  {{ copied() ? 'Copied!' : 'Copy code' }}
-                </button>
+                <div class="copy-actions">
+                  <button class="copy-code" (click)="copyCode(room.roomId)">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <rect x="8" y="8" width="11" height="11" rx="2"></rect>
+                      <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
+                    </svg>
+                    {{ codeCopied() ? 'Copied!' : 'Copy code' }}
+                  </button>
+                  <button class="copy-link" (click)="copyLink()">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M10 13a5 5 0 0 0 7.1.1l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1"></path>
+                      <path d="M14 11a5 5 0 0 0-7.1-.1l-2 2A5 5 0 0 0 12 20l1.1-1.1"></path>
+                    </svg>
+                    {{ linkCopied() ? 'Copied!' : 'Copy Link' }}
+                  </button>
+                </div>
               </div>
               @if (qr()) {
                 <div class="qr-frame">
@@ -265,7 +274,12 @@ export class Lobby {
   private readonly browser = inject(BROWSER);
   private readonly route = inject(ActivatedRoute);
   readonly qr = signal('');
-  readonly copied = signal(false);
+  readonly codeCopied = signal(false);
+  readonly linkCopied = signal(false);
+  readonly joinUrl = computed(() => {
+    const roomId = this.client.room()?.roomId;
+    return roomId ? joinRoomUrl(this.browser.origin, this.browser.basePath, roomId) : '';
+  });
   readonly closeDialog = viewChild<ElementRef<HTMLDialogElement>>('closeDialog');
   readonly self = computed(() =>
     this.client.room()?.players.find((p) => p.playerId === this.client.room()?.currentPlayerId),
@@ -281,10 +295,7 @@ export class Lobby {
       const id = this.client.room()?.roomId;
       if (id)
         void QRCode.toDataURL(
-          new URL(
-            `${publicPath(this.browser.basePath, 'join')}?room=${encodeURIComponent(id)}`,
-            this.browser.origin,
-          ).toString(),
+          this.joinUrl(),
           {
             width: 232,
             margin: 1,
@@ -295,11 +306,19 @@ export class Lobby {
           .catch(() => this.qr.set(''));
     });
   }
-  async copy(code: string): Promise<void> {
+  async copyCode(code: string): Promise<void> {
     if (await copyText(code)) {
-      this.copied.set(true);
+      this.codeCopied.set(true);
     } else {
       this.client.notice.set('Select the room code above to copy it.');
+    }
+  }
+  async copyLink(): Promise<void> {
+    const url = this.joinUrl();
+    if (url && (await copyText(url))) {
+      this.linkCopied.set(true);
+    } else {
+      this.client.notice.set('Copy the join link from your browser address bar.');
     }
   }
   openClose(): void {

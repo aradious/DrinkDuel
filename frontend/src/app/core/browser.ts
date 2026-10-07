@@ -50,6 +50,11 @@ export function publicPath(basePath: string, path: string): string {
   return `${normalizeBasePath(basePath)}${path.replace(/^\/+/, '')}`;
 }
 
+export function joinRoomUrl(origin: string, basePath: string, roomId: string): string {
+  const joinPath = `${publicPath(basePath, 'join')}?room=${encodeURIComponent(roomId)}`;
+  return new URL(joinPath, origin).toString();
+}
+
 export function webSocketUrl(origin: string, basePath: string, path: string): string {
   const url = new URL(publicPath(basePath, path), origin);
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';

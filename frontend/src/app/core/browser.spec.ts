@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createRequestId, normalizeBasePath, publicPath, webSocketUrl } from './browser';
+import {
+  createRequestId,
+  joinRoomUrl,
+  normalizeBasePath,
+  publicPath,
+  webSocketUrl,
+} from './browser';
 
 describe('createRequestId', () => {
   it('uses crypto.randomUUID when it is available', () => {
@@ -45,6 +51,15 @@ describe('deployment base paths', () => {
     expect(publicPath('/drinkduel/', '/api/rooms')).toBe('/drinkduel/api/rooms');
     expect(webSocketUrl('https://example.com', '/drinkduel/', '/ws/rooms')).toBe(
       'wss://example.com/drinkduel/ws/rooms',
+    );
+  });
+
+  it('builds root and subpath join URLs from the supplied browser origin', () => {
+    expect(joinRoomUrl('https://root.example', '/', 'ABC123')).toBe(
+      'https://root.example/join?room=ABC123',
+    );
+    expect(joinRoomUrl('https://party.example', '/drinkduel/', 'XYZ789')).toBe(
+      'https://party.example/drinkduel/join?room=XYZ789',
     );
   });
 });

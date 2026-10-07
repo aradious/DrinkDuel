@@ -2,6 +2,8 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import QRCode from 'qrcode';
+import { BROWSER, BrowserPort } from '../core/browser';
 import { RoomClient } from '../core/room-client';
 import { RoomView } from '../core/room.models';
 import { Home } from './home';
@@ -78,7 +80,14 @@ describe('Step 8A screens', () => {
     selectLiarsDice: ReturnType<typeof vi.fn>;
     startLiarsDice: ReturnType<typeof vi.fn>;
   };
+  let clipboardWriteText: ReturnType<typeof vi.fn>;
   beforeEach(() => {
+    clipboardWriteText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: clipboardWriteText },
+    });
+    vi.mocked(QRCode.toDataURL).mockClear();
     client = {
       room: signal<RoomView | null>(null),
       connection: signal('connected'),
@@ -154,6 +163,47 @@ describe('Step 8A screens', () => {
     expect(root.querySelector('a[href="/room/ABC234/games"]')?.textContent).toContain(
       'Choose Game',
     );
+  });
+  it.each([
+    ['root', 'https://root.example', '/', 'https://root.example/join?room=ABC234'],
+    [
+      'subpath',
+      'https://party.example',
+      '/drinkduel/',
+      'https://party.example/drinkduel/join?room=ABC234',
+    ],
+  ])(
+    'copies the same base-aware %s join URL represented by the QR code',
+    async (_deployment, origin, basePath, expectedUrl) => {
+      TestBed.overrideProvider(BROWSER, {
+        useValue: {
+          storage: localStorage,
+          socket: vi.fn(),
+          request: vi.fn(),
+          origin,
+          basePath,
+          randomToken: vi.fn(),
+          requestId: vi.fn(),
+        } as unknown as BrowserPort,
+      });
+      client.room.set(view);
+      const fixture = TestBed.createComponent(Lobby);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(QRCode.toDataURL).toHaveBeenCalledWith(expectedUrl, expect.any(Object));
+      await fixture.componentInstance.copyLink();
+      fixture.detectChanges();
+      expect(clipboardWriteText).toHaveBeenCalledWith(expectedUrl);
+      expect(fixture.nativeElement.textContent).toContain('Copied!');
+    },
+  );
+  it('keeps Copy Code limited to the room code', async () => {
+    client.room.set(view);
+    const fixture = TestBed.createComponent(Lobby);
+    fixture.detectChanges();
+    await fixture.componentInstance.copyCode(view.roomId);
+    expect(clipboardWriteText).toHaveBeenCalledWith('ABC234');
   });
   it('Player sees Leave without GM controls and updates live membership', async () => {
     client.room.set({

@@ -175,7 +175,14 @@
   color: #6c5262;
 }
 
-.copy-code {
+.copy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.copy-code,
+.copy-link {
   min-height: 42px;
   padding: 8px 14px;
   gap: 8px;
@@ -189,7 +196,8 @@
     inset 0 1px 0 rgb(255 255 255 / 0.28);
 }
 
-.copy-code svg {
+.copy-code svg,
+.copy-link svg {
   width: 18px;
   height: 18px;
   fill: none;
