@@ -1,5 +1,6 @@
 package com.drinkduel.transport;
 
+import com.drinkduel.logging.SafeLog;
 import com.drinkduel.realtime.AuthenticatedOwnerPrincipal;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
@@ -8,11 +9,15 @@ import java.security.Principal;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Establishes and restores an opaque server-issued host identity for HTTP and WebSocket use. */
 @Component
 @Order(20)
 public final class HostIdentityFilter extends OncePerRequestFilter {
+    private static final Logger LOG = LoggerFactory.getLogger(HostIdentityFilter.class);
+
     @Override protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                                FilterChain chain) throws ServletException, IOException {
         String path = request.getRequestURI();
@@ -30,14 +35,25 @@ public final class HostIdentityFilter extends OncePerRequestFilter {
                 return;
             }
             if ("POST".equals(request.getMethod())) {
+                String correlationId = SafeLog.correlationId();
                 if (!BrowserOrigin.sameOrigin(request)) {
+                    LOG.warn("event=host.session.rejected correlationId={} reason=ORIGIN_REJECTED",
+                            correlationId);
                     response.setStatus(403);
                     return;
                 }
-                HostIdentitySession.create(request);
+                try {
+                    HostIdentitySession.create(request);
+                } catch (RuntimeException exception) {
+                    SafeLog.unexpected(LOG, "host.session.failed", correlationId, exception);
+                    throw exception;
+                }
+                LOG.info("event=host.session.created correlationId={}", correlationId);
                 response.setStatus(204);
                 return;
             }
+            LOG.warn("event=host.session.rejected correlationId={} reason=METHOD_NOT_ALLOWED",
+                    SafeLog.correlationId());
             response.setStatus(405);
             return;
         }

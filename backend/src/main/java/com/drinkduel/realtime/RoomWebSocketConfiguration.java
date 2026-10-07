@@ -20,6 +20,7 @@ public class RoomWebSocketConfiguration implements WebSocketConfigurer {
 
     @Override public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         // Spring's default same-origin policy; no wildcard origins or URL credentials.
-        registry.addHandler(handler, "/ws/rooms");
+        registry.addHandler(handler, "/ws/rooms")
+                .addInterceptors(new LoggingOriginHandshakeInterceptor());
     }
 }

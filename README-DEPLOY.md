@@ -35,6 +35,14 @@ Spring Boot's standard `SERVER_PORT` setting can change the default port when re
 
 `DRINKDUEL_SECURE_COOKIES=false` is supported only for local, non-HTTPS testing. Never use it for a public production deployment. Do not enable the `local-preview` profile or development identity settings in production.
 
+## Production logs
+
+The standalone deployment package includes an external `application.yml` that writes Spring and DrinkDuel logs to both the console and `logs/drinkduel.log`. The relative path is resolved from the process working directory, so start the JAR from its deployment directory or configure the service manager's working directory explicitly. The deployment account must be able to create and write the `logs` directory.
+
+Logback rotates the file at 10 MB, retains 14 history periods, and caps archived logs at 250 MB. Production logging stays at the normal INFO/WARN/ERROR levels; global DEBUG and TRACE logging are not enabled.
+
+Application logs cover requests that reach the JAR. DNS, TLS certificate negotiation, proxy routing, upstream connection failures, and WebSocket Upgrade failures that occur before forwarding must be diagnosed with reverse-proxy, load-balancer, or SSL logs.
+
 ## Domain and HTTPS
 
 DrinkDuel is not tied to a specific hostname. The deployment team may assign its own domain or subdomain, such as the conceptual `https://drinkduel.example.com`. Changing the hostname does not require rebuilding Angular.

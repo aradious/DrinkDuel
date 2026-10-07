@@ -1,5 +1,6 @@
 package com.drinkduel.realtime;
 
+import com.drinkduel.logging.SafeLog;
 import com.drinkduel.room.*;
 import java.time.Clock;
 import java.time.Duration;
@@ -7,12 +8,15 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import static com.drinkduel.room.DomainException.Code.*;
 
 /** Coordinates subscriptions and RoomService on the STORE's existing per-room lock.
  * Client methods only enqueue; they must never perform network I/O here.
  */
 public final class RoomRealtime implements RoomStore.Listener {
+    private static final Logger LOG = LoggerFactory.getLogger(RoomRealtime.class);
     public interface Client {
         void enqueue(RoomProtocol.Message message);
         void terminate(RoomProtocol.Terminal message);
@@ -77,10 +81,14 @@ public final class RoomRealtime implements RoomStore.Listener {
                     return null;
                 });
             } catch (DomainException exception) {
+                if (exception.code() == NOT_AUTHORIZED || exception.code() == PLAYER_KICKED)
+                    LOG.warn("event=ws.command.rejected correlationId={} command={} reason={}",
+                            correlationId(command.requestId()), safeCommandType(command.type()), exception.code());
                 connection.client.enqueue(new RoomProtocol.Result(safeRequestId(command.requestId()),
                         false, exception.code().name(), null));
             } catch (RuntimeException exception) {
                 // Never reflect exception messages or payload values into protocol errors.
+                SafeLog.unexpected(LOG, "ws.command.failed", correlationId(command.requestId()), exception);
                 connection.client.enqueue(new RoomProtocol.Result(safeRequestId(command.requestId()),
                         false, "INTERNAL_ERROR", null));
             }
@@ -258,6 +266,15 @@ public final class RoomRealtime implements RoomStore.Listener {
 
     static String safeRequestId(String id) {
         return id != null && id.matches("[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}") ? id : null;
+    }
+
+    private static String correlationId(String requestId) {
+        String safe = safeRequestId(requestId);
+        return safe == null ? SafeLog.correlationId() : safe;
+    }
+
+    private static String safeCommandType(String type) {
+        return type != null && type.matches("[A-Z_]{1,40}") ? type : "INVALID";
     }
 
     private void validate(RoomProtocol.Command command) {

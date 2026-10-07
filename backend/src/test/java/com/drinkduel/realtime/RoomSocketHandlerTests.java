@@ -1,11 +1,15 @@
 package com.drinkduel.realtime;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.drinkduel.room.*;
 import java.time.Clock;
 import java.util.*;
 import java.util.concurrent.*;
 import java.security.Principal;
 import org.junit.jupiter.api.*;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.socket.*;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -60,13 +64,26 @@ class RoomSocketHandlerTests {
 
     @Test void unknownIdentityClaimsMalformedJsonAndTrailingPayloadsAreSafe() throws Exception {
         var socket = socket(null);
-        for (String payload : List.of("{\"isGM\":true,\"owner\":\"private-owner\"}",
-                "{\"guestToken\":\"secret-in-parser-error", "null", "{} {}")) {
-            handler.handleTextMessage(socket.session, new TextMessage(payload));
-            JsonNode result = socket.next();
-            assertEquals("INVALID_INPUT", result.get("code").asString());
-            assertFalse(result.toString().contains("private-owner"));
-            assertFalse(result.toString().contains("secret-in-parser-error"));
+        Logger logger = (Logger) LoggerFactory.getLogger(RoomSocketHandler.class);
+        var appender = new ListAppender<ILoggingEvent>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            for (String payload : List.of("{\"isGM\":true,\"owner\":\"private-owner\"}",
+                    "{\"guestToken\":\"secret-in-parser-error", "null", "{} {}")) {
+                handler.handleTextMessage(socket.session, new TextMessage(payload));
+                JsonNode result = socket.next();
+                assertEquals("INVALID_INPUT", result.get("code").asString());
+                assertFalse(result.toString().contains("private-owner"));
+                assertFalse(result.toString().contains("secret-in-parser-error"));
+            }
+            String logs = appender.list.stream().map(ILoggingEvent::getFormattedMessage)
+                    .collect(java.util.stream.Collectors.joining("\n"));
+            assertFalse(logs.contains("private-owner"));
+            assertFalse(logs.contains("secret-in-parser-error"));
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
         }
         assertEquals(1, store.find(room.id()).orElseThrow().players().size());
     }
