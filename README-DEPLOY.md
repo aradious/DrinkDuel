@@ -115,6 +115,14 @@ Internet --HTTPS--> Reverse proxy / load balancer --HTTP or HTTPS--> DrinkDuel J
 
 The application enables Spring's framework forwarded-header handling. The proxy should set `Host`, `X-Forwarded-Host`, `X-Forwarded-Proto`, and `X-Forwarded-Port`, replacing untrusted client-supplied values.
 
+## Social link previews
+
+The Angular shell contains Open Graph and Twitter metadata for LINE and other link crawlers. DrinkDuel resolves `og:image` and `og:url` in the initial HTML response, so crawlers do not need to execute JavaScript. The preview uses the shared `images/drinkduel-og.png` artwork for Home, Join, and Room links.
+
+For the standalone JAR, Spring derives the public origin from the servlet request after framework forwarded-header processing and combines it with the packaged Angular base href. A `/drinkduel/` build therefore produces `/drinkduel/images/drinkduel-og.png` and `/drinkduel/join?...` public URLs while its internal endpoints remain `/api` and `/ws`.
+
+For the root Docker deployment, Nginx resolves the same placeholders before returning `index.html`. When TLS terminates upstream, the trusted proxy must replace client-supplied `X-Forwarded-Proto` with `https` and replace `Host` with the approved public host. Do not append to or pass through untrusted forwarding headers. Public preview requests must reach DrinkDuel over HTTPS for `og:image` and `og:url` to use absolute HTTPS URLs.
+
 ## Health check
 
 Use:
