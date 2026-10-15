@@ -79,6 +79,7 @@ describe('Step 8A screens', () => {
     create: ReturnType<typeof vi.fn>;
     selectLiarsDice: ReturnType<typeof vi.fn>;
     startLiarsDice: ReturnType<typeof vi.fn>;
+    selectSheriff: ReturnType<typeof vi.fn>;
   };
   let clipboardWriteText: ReturnType<typeof vi.fn>;
   beforeEach(() => {
@@ -104,6 +105,7 @@ describe('Step 8A screens', () => {
       create: vi.fn(),
       selectLiarsDice: vi.fn(),
       startLiarsDice: vi.fn(),
+      selectSheriff: vi.fn(),
     };
     TestBed.configureTestingModule({
       providers: [
@@ -225,10 +227,15 @@ describe('Step 8A screens', () => {
     fixture.detectChanges();
     expect(root.querySelectorAll('.player-card')).toHaveLength(1);
   });
-  it('keeps both game selections GM-only and uses their authoritative commands', () => {
+  it('keeps every game selection GM-only and uses its authoritative command', () => {
     client.room.set({
       ...view,
-      allowedActions: [...view.allowedActions, 'GM_SELECT_LIARS_DICE'],
+      allowedActions: [...view.allowedActions, 'GM_SELECT_LIARS_DICE', 'GM_SELECT_SHERIFF'],
+      players: [
+        ...view.players,
+        { playerId: 'third', nickname: 'Mina', avatarId: 3, connectionStatus: 'CONNECTED' },
+        { playerId: 'fourth', nickname: 'Ploy', avatarId: 4, connectionStatus: 'CONNECTED' },
+      ],
     });
     let fixture = TestBed.createComponent(ChooseGame);
     fixture.detectChanges();
@@ -244,6 +251,15 @@ describe('Step 8A screens', () => {
     );
     (liarCard?.querySelector('button') as HTMLButtonElement).click();
     expect(client.selectLiarsDice).toHaveBeenCalledOnce();
+    client.busy.set(false);
+    const sheriffCard = [...root.querySelectorAll('.game-card')].find((card) =>
+      card.textContent?.includes('Sheriff'),
+    );
+    expect(sheriffCard?.querySelector('img')?.getAttribute('src')).toBe(
+      'assets/drinkduel/games/sheriff/cover.png',
+    );
+    (sheriffCard?.querySelector('button') as HTMLButtonElement).click();
+    expect(client.selectSheriff).toHaveBeenCalledOnce();
 
     client.action.mockClear();
     client.room.set({
@@ -261,7 +277,7 @@ describe('Step 8A screens', () => {
     expect(client.action).not.toHaveBeenCalled();
     expect(client.selectLiarsDice).not.toHaveBeenCalledTimes(2);
   });
-  it('keeps both games disabled until two connected players are present', () => {
+  it('uses two-player and four-player availability thresholds from authoritative presence', () => {
     client.room.set({
       ...view,
       allowedActions: [...view.allowedActions, 'GM_SELECT_LIARS_DICE'],
@@ -271,15 +287,28 @@ describe('Step 8A screens', () => {
     fixture.detectChanges();
     const root = fixture.nativeElement as HTMLElement;
     const cards = [...root.querySelectorAll<HTMLElement>('.game-card')];
-    const whoButton = cards.find((card) => card.textContent?.includes('Who Am I?'))!
+    const whoButton = cards
+      .find((card) => card.textContent?.includes('Who Am I?'))!
       .querySelector('button') as HTMLButtonElement;
-    const liarButton = cards.find((card) => card.textContent?.includes("Liar's Dice"))!
+    const liarButton = cards
+      .find((card) => card.textContent?.includes("Liar's Dice"))!
+      .querySelector('button') as HTMLButtonElement;
+    const sheriffButton = cards
+      .find((card) => card.textContent?.includes('Sheriff'))!
       .querySelector('button') as HTMLButtonElement;
     expect(whoButton.disabled).toBe(true);
     expect(liarButton.disabled).toBe(true);
-    expect(root.textContent?.match(/At least two connected players are needed to start\./g)).toHaveLength(2);
+    expect(sheriffButton.disabled).toBe(true);
+    expect(
+      [...root.querySelectorAll('.start-help')].filter((message) =>
+        message.textContent?.includes('At least 2 connected players are needed to start.'),
+      ),
+    ).toHaveLength(2);
+    expect(root.textContent).toContain('At least 4 connected players are needed to start.');
     liarButton.click();
     expect(client.selectLiarsDice).not.toHaveBeenCalled();
+    sheriffButton.click();
+    expect(client.selectSheriff).not.toHaveBeenCalled();
 
     client.room.update((room) => ({
       ...room!,
@@ -289,10 +318,24 @@ describe('Step 8A screens', () => {
     fixture.detectChanges();
     expect(whoButton.disabled).toBe(false);
     expect(liarButton.disabled).toBe(false);
+    expect(sheriffButton.disabled).toBe(true);
 
     client.room.update((room) => ({
       ...room!,
       roomRevision: 3,
+      allowedActions: [...room!.allowedActions, 'GM_SELECT_SHERIFF'],
+      players: [
+        ...room!.players,
+        { playerId: 'third', nickname: 'Mina', avatarId: 3, connectionStatus: 'CONNECTED' },
+        { playerId: 'fourth', nickname: 'Ploy', avatarId: 4, connectionStatus: 'CONNECTED' },
+      ],
+    }));
+    fixture.detectChanges();
+    expect(sheriffButton.disabled).toBe(false);
+
+    client.room.update((room) => ({
+      ...room!,
+      roomRevision: 4,
       players: room!.players.map((player, index) =>
         index === 0 ? player : { ...player, connectionStatus: 'DISCONNECTED' },
       ),
@@ -300,6 +343,7 @@ describe('Step 8A screens', () => {
     fixture.detectChanges();
     expect(whoButton.disabled).toBe(true);
     expect(liarButton.disabled).toBe(true);
+    expect(sheriffButton.disabled).toBe(true);
   });
   it('GM absence is a friendly waiting state and names render as text', async () => {
     client.room.set({

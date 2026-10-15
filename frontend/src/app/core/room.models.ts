@@ -77,11 +77,60 @@ export interface LiarsDiceRevealView extends LiarsDiceBaseView {
   revealedHands: LiarsDiceHandView[];
   revealCounts: LiarsDiceFaceCountView[];
 }
-export type LiarsDiceGameView =
-  | LiarsDiceStartView
-  | LiarsDicePlayingView
-  | LiarsDiceRevealView;
-export type GameView = WhoAmIGameView | LiarsDiceGameView;
+export type LiarsDiceGameView = LiarsDiceStartView | LiarsDicePlayingView | LiarsDiceRevealView;
+export type SheriffRole = 'SHERIFF' | 'DEPUTY' | 'OUTLAW' | 'RENEGADE';
+export type SheriffPlayerStatus = 'ALIVE' | 'DEAD';
+export interface SheriffParticipantView {
+  playerId: string;
+  lifeStatus: SheriffPlayerStatus;
+}
+export interface SheriffPublicRoleView {
+  playerId: string;
+  role: SheriffRole;
+}
+export interface SheriffRoleStatusView {
+  role: SheriffRole;
+  assigned: number;
+  alive: number;
+  dead: number;
+}
+export interface SheriffOverallStatusView {
+  total: number;
+  alive: number;
+  dead: number;
+}
+interface SheriffBaseView {
+  gameType: 'SHERIFF';
+}
+export interface SheriffStartView extends SheriffBaseView {
+  phase: 'START';
+  participants: [];
+  sheriffPlayerId: null;
+  ownRole: null;
+  publicRoles: [];
+  roleStatus: [];
+  overallStatus: null;
+}
+export interface SheriffPlayingView extends SheriffBaseView {
+  phase: 'PLAYING';
+  participants: SheriffParticipantView[];
+  sheriffPlayerId: string;
+  ownRole: SheriffRole | null;
+  publicRoles: SheriffPublicRoleView[];
+  roleStatus: SheriffRoleStatusView[];
+  overallStatus: SheriffOverallStatusView;
+}
+export interface SheriffRevealView extends SheriffBaseView {
+  phase: 'REVEAL';
+  participants: SheriffParticipantView[];
+  sheriffPlayerId: string;
+  ownRole: SheriffRole | null;
+  publicRoles: SheriffPublicRoleView[];
+  roleStatus: SheriffRoleStatusView[];
+  overallStatus: SheriffOverallStatusView;
+}
+export type SheriffGameView = SheriffStartView | SheriffPlayingView | SheriffRevealView;
+export type GameView = WhoAmIGameView | LiarsDiceGameView | SheriffGameView;
 export interface RoomView {
   roomId: string;
   roomRevision: number;
@@ -97,6 +146,7 @@ export interface RoomView {
   players: PlayerView[];
   game?: WhoAmIGameView | null;
   liarsDice?: LiarsDiceGameView | null;
+  sheriff?: SheriffGameView | null;
 }
 export type Role = 'guest' | 'gm';
 export interface Attachment {

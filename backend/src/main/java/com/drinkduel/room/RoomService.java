@@ -4,6 +4,9 @@ import com.drinkduel.game.GameSession;
 import com.drinkduel.game.AuthoritativeDiceRoller;
 import com.drinkduel.game.LiarsDiceState;
 import com.drinkduel.game.SecureDiceRandomSource;
+import com.drinkduel.game.SecureSheriffRoleShuffler;
+import com.drinkduel.game.SheriffRoleShuffler;
+import com.drinkduel.game.SheriffState;
 import com.drinkduel.game.WhoAmIState;
 import java.util.Objects;
 import java.util.UUID;
@@ -18,17 +21,25 @@ public final class RoomService {
     private final RoomStore store;
     private final AvatarCatalog avatars;
     private final AuthoritativeDiceRoller diceRoller;
+    private final SheriffRoleShuffler sheriffRoleShuffler;
     private final java.security.SecureRandom shuffleRandom = new java.security.SecureRandom();
 
     @Autowired
     public RoomService(RoomStore store, AvatarCatalog avatars) {
-        this(store, avatars, new AuthoritativeDiceRoller(new SecureDiceRandomSource()));
+        this(store, avatars, new AuthoritativeDiceRoller(new SecureDiceRandomSource()),
+                new SecureSheriffRoleShuffler());
     }
 
     public RoomService(RoomStore store, AvatarCatalog avatars, AuthoritativeDiceRoller diceRoller) {
+        this(store, avatars, diceRoller, new SecureSheriffRoleShuffler());
+    }
+
+    public RoomService(RoomStore store, AvatarCatalog avatars, AuthoritativeDiceRoller diceRoller,
+                       SheriffRoleShuffler sheriffRoleShuffler) {
         this.store = Objects.requireNonNull(store);
         this.avatars = Objects.requireNonNull(avatars);
         this.diceRoller = Objects.requireNonNull(diceRoller);
+        this.sheriffRoleShuffler = Objects.requireNonNull(sheriffRoleShuffler);
     }
 
     public Room createRoom(PlayerIdentity.Owner verifiedOwner, String nickname) {
@@ -120,6 +131,65 @@ public final class RoomService {
                 .orElseThrow(() -> new DomainException(DomainException.Code.INVALID_GAME_PHASE));
         if (!session.id().equals(sessionId)) throw new DomainException(DomainException.Code.STALE_COMMAND);
         if (!(session.state() instanceof LiarsDiceState state) || state.phase() != phase)
+            throw new DomainException(DomainException.Code.INVALID_GAME_PHASE);
+        return state;
+    }
+
+    public Room selectSheriff(String roomId, PlayerIdentity actor) {
+        return store.mutate(roomId, room -> {
+            room.requireGm(actor);
+            if (!room.isLobby()) throw new DomainException(DomainException.Code.GAME_IN_PROGRESS);
+            return room.withSession(new GameSession(UUID.randomUUID(), SheriffState.start()));
+        });
+    }
+
+    public Room startSheriff(String roomId, PlayerIdentity actor, UUID sessionId) {
+        return store.mutate(roomId, room -> {
+            room.requireGm(actor);
+            var state = sheriffState(room, sessionId, SheriffState.Phase.START);
+            var roster = room.players().stream()
+                    .filter(player -> player.connectionState() == ConnectionState.CONNECTED)
+                    .map(Player::id)
+                    .toList();
+            if (roster.size() < SheriffState.MIN_PARTICIPANTS)
+                throw new DomainException(DomainException.Code.NOT_ENOUGH_PLAYERS);
+            return room.withSession(new GameSession(sessionId,
+                    state.startRound(roster, sheriffRoleShuffler)));
+        });
+    }
+
+    public Room markSheriffDead(String roomId, PlayerIdentity actor, UUID sessionId,
+                                UUID targetPlayerId) {
+        return store.mutate(roomId, room -> {
+            room.requireGm(actor);
+            var state = sheriffState(room, sessionId, SheriffState.Phase.PLAYING);
+            var updated = state.markDead(targetPlayerId);
+            if (updated == state) return room;
+            return room.withSession(new GameSession(sessionId, updated));
+        });
+    }
+
+    public Room endSheriff(String roomId, PlayerIdentity actor, UUID sessionId) {
+        return store.mutate(roomId, room -> {
+            room.requireGm(actor);
+            var state = sheriffState(room, sessionId, SheriffState.Phase.PLAYING);
+            return room.withSession(new GameSession(sessionId, state.reveal()));
+        });
+    }
+
+    public Room restartSheriff(String roomId, PlayerIdentity actor, UUID sessionId) {
+        return store.mutate(roomId, room -> {
+            room.requireGm(actor);
+            sheriffState(room, sessionId, SheriffState.Phase.REVEAL);
+            return room.withSession(new GameSession(UUID.randomUUID(), SheriffState.start()));
+        });
+    }
+
+    private SheriffState sheriffState(Room room, UUID sessionId, SheriffState.Phase phase) {
+        var session = room.currentSession()
+                .orElseThrow(() -> new DomainException(DomainException.Code.INVALID_GAME_PHASE));
+        if (!session.id().equals(sessionId)) throw new DomainException(DomainException.Code.STALE_COMMAND);
+        if (!(session.state() instanceof SheriffState state) || state.phase() != phase)
             throw new DomainException(DomainException.Code.INVALID_GAME_PHASE);
         return state;
     }
@@ -219,9 +289,12 @@ public final class RoomService {
                     .orElseThrow(() -> new DomainException(DomainException.Code.INVALID_GAME_PHASE));
             if (!session.id().equals(sessionId))
                 throw new DomainException(DomainException.Code.STALE_COMMAND);
-            boolean allowed = session.state() instanceof WhoAmIState whoAmI && whoAmI.canBackToRoom()
-                    || session.state() instanceof LiarsDiceState liarsDice
-                    && liarsDice.phase() == LiarsDiceState.Phase.START;
+            boolean allowed = (session.state() instanceof WhoAmIState whoAmI && whoAmI.canBackToRoom())
+                    || (session.state() instanceof LiarsDiceState liarsDice
+                    && liarsDice.phase() == LiarsDiceState.Phase.START)
+                    || (session.state() instanceof SheriffState sheriff
+                    && (sheriff.phase() == SheriffState.Phase.START
+                    || sheriff.phase() == SheriffState.Phase.REVEAL));
             if (!allowed)
                 throw new DomainException(DomainException.Code.INVALID_GAME_PHASE);
             return room.withoutSession();

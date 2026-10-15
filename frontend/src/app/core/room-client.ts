@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { BROWSER, publicPath, webSocketUrl } from './browser';
 import { Attachment, RoomView, friendlyError, roomCode } from './room.models';
 import { normalizeLiarsDiceView } from './liars-dice-state';
+import { normalizeSheriffView } from './sheriff-state';
 
 @Injectable({ providedIn: 'root' })
 export class RoomClient {
@@ -212,7 +213,7 @@ export class RoomClient {
       'roomId' in message.room &&
       message.room.roomId === this.attachment?.roomId
     ) {
-      const next = message.room as RoomView & { liarsDice?: unknown },
+      const next = message.room as RoomView & { liarsDice?: unknown; sheriff?: unknown },
         previous = this.room();
       if (
         !this.attaching &&
@@ -237,19 +238,36 @@ export class RoomClient {
         players,
         game,
         liarsDice,
+        sheriff,
       } = next;
       const normalizedLiarsDice = normalizeLiarsDiceView(liarsDice, currentPlayerId);
+      const normalizedSheriff = normalizeSheriffView(sheriff, currentPlayerId);
       const validSessionId =
         typeof sessionId === 'string' &&
         /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
           sessionId,
         );
       const compatibleLiarsDice =
-        lifecycle === 'IN_GAME' && validSessionId && !game && liarsDice && normalizedLiarsDice
+        lifecycle === 'IN_GAME' &&
+        validSessionId &&
+        !game &&
+        !sheriff &&
+        liarsDice &&
+        normalizedLiarsDice
           ? normalizedLiarsDice
+          : null;
+      const compatibleSheriff =
+        lifecycle === 'IN_GAME' &&
+        validSessionId &&
+        !game &&
+        !liarsDice &&
+        sheriff &&
+        normalizedSheriff
+          ? normalizedSheriff
           : null;
       const safeGame =
         !liarsDice &&
+        !sheriff &&
         game?.gameType === 'WHO_AM_I' &&
         ['SUBMIT_NAME', 'PLAYING', 'ROAST', 'REVEAL'].includes(game.phase)
           ? {
@@ -329,13 +347,16 @@ export class RoomClient {
         players,
         game: safeGame,
         liarsDice: compatibleLiarsDice,
+        sheriff: compatibleSheriff,
       });
-      let authoritativeRoute = compatibleLiarsDice
-        ? ['/room', roomId, 'liars-dice', compatibleLiarsDice.phase.toLowerCase()]
-        : lifecycle === 'IN_GAME' &&
-            (safeGame?.phase === 'SUBMIT_NAME' || safeGame?.phase === 'PLAYING')
-          ? ['/room', roomId]
-          : null;
+      let authoritativeRoute = compatibleSheriff
+        ? ['/room', roomId, 'sheriff', compatibleSheriff.phase.toLowerCase()]
+        : compatibleLiarsDice
+          ? ['/room', roomId, 'liars-dice', compatibleLiarsDice.phase.toLowerCase()]
+          : lifecycle === 'IN_GAME' &&
+              (safeGame?.phase === 'SUBMIT_NAME' || safeGame?.phase === 'PLAYING')
+            ? ['/room', roomId]
+            : null;
       if (!authoritativeRoute && lifecycle === 'LOBBY' && previous?.lifecycle === 'IN_GAME') {
         authoritativeRoute = this.lobbyNavigation ?? ['/room', roomId];
         this.lobbyNavigation = undefined;
@@ -532,6 +553,29 @@ export class RoomClient {
   restartLiarsDice(): void {
     if (!this.can('GM_RESTART_LIARS_DICE')) return;
     this.gameCommand('GM_RESTART_LIARS_DICE');
+  }
+  selectSheriff(): void {
+    if (!this.can('GM_SELECT_SHERIFF')) return;
+    this.busy.set(true);
+    this.notice.set('');
+    this.write('GM_SELECT_SHERIFF');
+    this.armTimeout();
+  }
+  startSheriff(): void {
+    if (!this.can('GM_START_SHERIFF')) return;
+    this.gameCommand('GM_START_SHERIFF');
+  }
+  markSheriffDead(targetPlayerId: string): void {
+    if (!this.can('GM_MARK_SHERIFF_DEAD')) return;
+    this.gameCommand('GM_MARK_SHERIFF_DEAD', { targetPlayerId });
+  }
+  endSheriff(): void {
+    if (!this.can('GM_END_SHERIFF')) return;
+    this.gameCommand('GM_END_SHERIFF');
+  }
+  restartSheriff(): void {
+    if (!this.can('GM_RESTART_SHERIFF')) return;
+    this.gameCommand('GM_RESTART_SHERIFF');
   }
   private gameCommand(type: string, fields: Record<string, unknown> = {}): void {
     this.busy.set(true);

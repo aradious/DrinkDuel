@@ -1,0 +1,119 @@
+:host {
+  display: block;
+}
+
+.role-status {
+  height: 100%;
+  padding: 20px;
+  color: #fff;
+  border: 1px solid rgb(255 220 177 / 0.34);
+  border-radius: 27px;
+  background: linear-gradient(145deg, rgb(57 19 52 / 0.97), rgb(27 8 32 / 0.97));
+  box-shadow:
+    0 7px 0 rgb(22 5 22 / 0.43),
+    0 22px 52px rgb(16 3 15 / 0.4);
+}
+
+.status-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.status-heading p {
+  margin: 0 0 6px;
+  color: #ffd477;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+}
+
+.status-heading h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.overall-status {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.overall-status span {
+  padding: 7px 9px;
+  color: #e9dce7;
+  font-size: 10px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.09);
+}
+
+.overall-status strong {
+  color: #ffda77;
+  font-size: 14px;
+}
+
+.role-count-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.role-count {
+  padding: 13px;
+  border: 1px solid rgb(231 165 97 / 0.38);
+  border-radius: 17px;
+  background: linear-gradient(130deg, rgb(116 50 65 / 0.56), rgb(62 25 62 / 0.7));
+}
+
+.role-count dl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  margin: 10px 0 0;
+}
+
+.role-count dl div {
+  display: grid;
+  gap: 2px;
+}
+
+.role-count dt {
+  color: #d7c4d5;
+  font-size: 9px;
+}
+
+.role-count dd {
+  margin: 0;
+  color: #fff;
+  font-size: 19px;
+  font-weight: 900;
+}
+
+@media (max-width: 700px) {
+  .status-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .overall-status {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .role-status {
+    padding: 16px 13px;
+    border-radius: 22px;
+  }
+
+  .role-count-grid {
+    gap: 7px;
+  }
+
+  .role-count {
+    padding: 10px;
+  }
+}

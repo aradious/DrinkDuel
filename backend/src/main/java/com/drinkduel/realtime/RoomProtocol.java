@@ -30,7 +30,8 @@ public final class RoomProtocol {
     public record Snapshot(String roomId, long roomRevision, String expiresAt, UUID sessionId,
                            String lifecycle, UUID currentPlayerId, UUID gmPlayerId, boolean isGm,
                            int capacity, boolean joinable, List<String> allowedActions,
-                           List<PlayerView> players, WhoAmIView game, LiarsDiceView liarsDice) {}
+                           List<PlayerView> players, WhoAmIView game, LiarsDiceView liarsDice,
+                           SheriffView sheriff) {}
     public record WhoAmIView(String gameType, String phase, List<ParticipantView> participants,
                              int submittedCount, int participantCount, boolean currentPlayerSubmitted,
                              boolean readyForShuffle, boolean canShuffle, List<GameCard> cards,
@@ -61,6 +62,23 @@ public final class RoomProtocol {
         @Override public String toString() { return "LiarsDiceHandView[redacted]"; }
     }
     public record LiarsDiceFaceCountView(int face, int rawCount, int effectiveCount) {}
+    public record SheriffView(String gameType, String phase,
+                              List<SheriffParticipantView> participants,
+                              UUID sheriffPlayerId, String ownRole,
+                              List<SheriffPublicRoleView> publicRoles,
+                              List<SheriffRoleStatusView> roleStatus,
+                              SheriffOverallStatusView overallStatus) {
+        public SheriffView {
+            participants = List.copyOf(participants);
+            publicRoles = List.copyOf(publicRoles);
+            roleStatus = List.copyOf(roleStatus);
+        }
+        @Override public String toString() { return "SheriffView[redacted]"; }
+    }
+    public record SheriffParticipantView(UUID playerId, String lifeStatus) {}
+    public record SheriffPublicRoleView(UUID playerId, String role) {}
+    public record SheriffRoleStatusView(String role, int assigned, int alive, int dead) {}
+    public record SheriffOverallStatusView(int total, int alive, int dead) {}
     public record Result(String type, String requestId, boolean accepted, String code,
                          Long roomRevision) implements Message {
         public Result(String requestId, boolean accepted, String code, Long revision) {

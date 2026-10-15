@@ -1,0 +1,30 @@
+:host {
+  display: block;
+}
+
+.excluded-role {
+  display: grid;
+  min-height: 300px;
+  place-items: center;
+  align-content: center;
+  padding: 28px;
+  text-align: center;
+  border: 1px dashed rgb(255 215 170 / 0.44);
+  border-radius: 20px;
+  background: rgb(255 255 255 / 0.05);
+}
+
+.excluded-role > span {
+  color: #ffd471;
+  font-size: 50px;
+}
+
+.excluded-role h3 {
+  margin: 8px 0 4px;
+}
+
+.excluded-role p {
+  margin: 0;
+  color: #eadbe2;
+  font-size: 13px;
+}

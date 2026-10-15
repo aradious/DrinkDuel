@@ -1,0 +1,462 @@
+:host {
+  display: block;
+  min-height: calc(100dvh - 96px);
+  isolation: isolate;
+}
+
+.scene {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(105deg, rgb(38 13 34 / 0.78), rgb(64 26 30 / 0.34) 52%, rgb(34 11 28 / 0.72)),
+    url('../../assets/drinkduel/games/sheriff/backgrounds/game-bg.png') center / cover no-repeat;
+}
+
+.start-shell {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  color: #fff;
+}
+
+.game-nav,
+.roster-heading,
+.secondary-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.game-nav {
+  margin-bottom: 14px;
+}
+
+.game-label,
+.eyebrow,
+.room-context span {
+  color: #ffd47b;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+}
+
+.game-label {
+  padding: 8px 13px;
+  color: #3e1e0c;
+  border: 1px solid #fff0ad;
+  border-radius: 10px;
+  background: linear-gradient(#ffd969, #e99b29);
+  box-shadow: 0 4px 0 rgb(88 39 12 / 0.45);
+}
+
+.room-context,
+.role-chip,
+.roster-counts {
+  border: 1px solid rgb(255 229 196 / 0.3);
+  background: rgb(46 17 43 / 0.9);
+  box-shadow: 0 4px 0 rgb(18 5 20 / 0.4);
+}
+
+.room-context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 12px;
+  border-radius: 14px;
+}
+
+.room-context strong {
+  font-size: 15px;
+  letter-spacing: 1.4px;
+}
+
+.game-heading {
+  display: grid;
+  grid-template-columns: 126px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 22px;
+  margin-bottom: 18px;
+  padding: 20px 24px;
+  border: 1px solid rgb(255 220 177 / 0.38);
+  border-radius: 28px;
+  background: linear-gradient(120deg, rgb(56 20 48 / 0.97), rgb(100 43 43 / 0.9));
+  box-shadow: 0 12px 36px rgb(27 7 22 / 0.45);
+}
+
+.western-mark {
+  display: grid;
+  width: 108px;
+  aspect-ratio: 1;
+  place-items: center;
+  color: #62300f;
+  font-size: 56px;
+  border: 5px solid #ffeca1;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #ffd96e, #d77b1f);
+  box-shadow:
+    0 7px 0 #7e3614,
+    inset 0 2px 0 rgb(255 255 255 / 0.52);
+}
+
+.eyebrow {
+  margin: 0 0 7px;
+}
+
+.round-copy h1 {
+  margin: 0 0 8px;
+  color: #fff;
+  font-size: clamp(30px, 4vw, 46px);
+  line-height: 1.02;
+  letter-spacing: -1.4px;
+}
+
+.round-copy p:last-child,
+.roster-heading > div:first-child > p:last-child {
+  max-width: 650px;
+  margin: 0;
+  color: #f0dfe4;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.role-chip {
+  padding: 8px 13px;
+  color: #fff3d1;
+  font-size: 12px;
+  font-weight: 850;
+  border-radius: 999px;
+}
+
+.start-panel {
+  padding: 26px;
+  border: 1px solid rgb(255 220 177 / 0.36);
+  border-radius: 28px;
+  background: linear-gradient(145deg, rgb(58 20 53 / 0.97), rgb(28 10 34 / 0.97));
+  box-shadow:
+    0 8px 0 rgb(24 6 23 / 0.44),
+    0 25px 60px rgb(16 3 15 / 0.45);
+}
+
+.roster-heading {
+  align-items: flex-end;
+  margin-bottom: 16px;
+}
+
+.roster-heading h2 {
+  margin: 0 0 4px;
+  color: #fff;
+  font-size: 26px;
+}
+
+.roster-counts {
+  display: grid;
+  min-width: 118px;
+  padding: 9px 13px;
+  text-align: center;
+  border-radius: 15px;
+}
+
+.roster-counts strong {
+  color: #ffdc78;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.roster-counts span {
+  color: #fff;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.roster-counts small {
+  margin-top: 4px;
+  color: #d8c5d9;
+  font-size: 9px;
+}
+
+.player-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  max-height: min(430px, 48dvh);
+  padding: 0 4px 0 0;
+  margin: 0;
+  overflow-y: auto;
+  list-style: none;
+  scrollbar-color: #b678a8 rgb(255 255 255 / 0.08);
+}
+
+.player-card {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 102px;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid #a76a91;
+  border-left: 5px solid #eaa434;
+  border-radius: 20px;
+  background: linear-gradient(115deg, rgb(91 38 78 / 0.97), rgb(52 22 57 / 0.97));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    0 4px 0 rgb(18 4 20 / 0.3);
+}
+
+.player-card.self {
+  border-color: #ffd56d;
+}
+
+.player-card.disconnected {
+  opacity: 0.7;
+}
+
+.identity {
+  flex: 1;
+  min-width: 0;
+}
+
+.identity h3 {
+  overflow: hidden;
+  margin: 0 0 7px;
+  color: #fff;
+  font-size: 17px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identity p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.you,
+.gm-badge,
+.connection {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 4px 7px;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.you {
+  padding-block: 3px;
+  margin-left: 4px;
+  color: #fff;
+  background: #8a39c9;
+}
+
+.gm-badge {
+  gap: 3px;
+  color: #583108;
+  background: #ffdd76;
+}
+
+.connection {
+  color: #d8fff6;
+  background: rgb(42 139 116 / 0.5);
+}
+
+.connection.offline {
+  color: #ffe4e6;
+  background: rgb(163 54 75 / 0.5);
+}
+
+.remove-player {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 8px 10px;
+  color: #ffd8df;
+  font-size: 12px;
+  border: 1px solid rgb(255 158 177 / 0.5);
+  border-radius: 11px;
+  background: rgb(132 37 65 / 0.45);
+}
+
+.start-actions {
+  display: grid;
+  justify-items: center;
+  margin-top: 22px;
+}
+
+.start-game {
+  min-width: min(100%, 330px);
+  color: #442407;
+  font-size: 17px;
+  border: 2px solid #ffe69a;
+  border-radius: 17px;
+  background: linear-gradient(#ffc94f, #ed8f19);
+  box-shadow:
+    0 6px 0 #91400d,
+    inset 0 2px 0 rgb(255 255 255 / 0.45);
+}
+
+.start-game:active:not(:disabled) {
+  box-shadow: 0 2px 0 #91400d;
+}
+
+.start-help,
+.waiting {
+  margin: 12px 0 0;
+  color: #eadce8;
+  font-size: 13px;
+  text-align: center;
+}
+
+.secondary-actions {
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 17px;
+}
+
+.back-to-room,
+.choose-another {
+  min-height: 44px;
+  padding: 9px 16px;
+  color: #f7e8f4;
+  font-size: 13px;
+  border: 1px solid rgb(255 221 244 / 0.34);
+  border-radius: 14px;
+  background: rgb(46 16 50 / 0.8);
+  box-shadow: 0 4px 0 rgb(15 3 18 / 0.34);
+}
+
+.waiting {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 13px 18px;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  border-radius: 15px;
+  background: rgb(255 255 255 / 0.08);
+}
+
+.waiting span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ffb64c;
+  box-shadow: 0 0 0 4px rgb(255 182 76 / 0.15);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+.notice {
+  max-width: 700px;
+  margin-inline: auto;
+}
+
+.loading {
+  width: fit-content;
+  margin: 18vh auto 0;
+  padding: 18px 22px;
+  color: #fff;
+  border-radius: 18px;
+  background: rgb(46 16 50 / 0.92);
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+    transform: scale(0.76);
+  }
+}
+
+@media (max-width: 700px) {
+  .player-list {
+    grid-template-columns: 1fr;
+  }
+
+  .game-heading {
+    grid-template-columns: 76px minmax(0, 1fr);
+    gap: 13px;
+    padding: 15px;
+  }
+
+  .western-mark {
+    width: 68px;
+    font-size: 35px;
+    border-width: 3px;
+  }
+
+  .role-chip {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .round-copy h1 {
+    font-size: 28px;
+  }
+
+  .round-copy p:last-child {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  :host {
+    min-height: calc(100dvh - 76px);
+  }
+
+  .game-nav {
+    margin-bottom: 10px;
+  }
+
+  .start-panel {
+    padding: 18px 14px;
+    border-radius: 24px;
+  }
+
+  .roster-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .roster-counts {
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    justify-content: start;
+    gap: 6px;
+    min-width: 0;
+    text-align: left;
+  }
+
+  .roster-counts small {
+    margin: 0 0 0 auto;
+  }
+
+  .player-card {
+    min-height: 94px;
+    gap: 10px;
+    padding: 9px;
+  }
+
+  .remove-player {
+    padding-inline: 7px;
+  }
+
+  .player-list {
+    max-height: 46dvh;
+  }
+
+  .secondary-actions {
+    width: 100%;
+  }
+
+  .back-to-room,
+  .choose-another {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .waiting span {
+    animation: none;
+  }
+}

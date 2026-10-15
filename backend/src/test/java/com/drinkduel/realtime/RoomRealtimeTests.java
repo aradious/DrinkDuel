@@ -75,7 +75,7 @@ class RoomRealtimeTests {
         assertTrue(gmView.isGm());
         assertFalse(guestView.isGm());
         assertEquals(List.of("GET_STATE", "GM_KICK_PLAYER", "GM_START_GAME", "GM_SELECT_LIARS_DICE",
-                "GM_CLOSE_ROOM"), gmView.allowedActions());
+                "GM_SELECT_SHERIFF", "GM_CLOSE_ROOM"), gmView.allowedActions());
         assertEquals(List.of("GET_STATE", "LEAVE_ROOM"), guestView.allowedActions());
         assertEquals("LOBBY", guestView.lifecycle());
         assertEquals(20, guestView.capacity());

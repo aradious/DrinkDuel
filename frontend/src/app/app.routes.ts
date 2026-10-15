@@ -13,12 +13,24 @@ export const routes: Routes = [
   },
   {
     path: 'room/:id/liars-dice/playing',
-    loadComponent: () =>
-      import('./pages/liars-dice-playing').then((m) => m.LiarsDicePlaying),
+    loadComponent: () => import('./pages/liars-dice-playing').then((m) => m.LiarsDicePlaying),
   },
   {
     path: 'room/:id/liars-dice/reveal',
     loadComponent: () => import('./pages/liars-dice-reveal').then((m) => m.LiarsDiceReveal),
+  },
+  {
+    path: 'room/:id/sheriff/start',
+    loadComponent: () => import('./pages/sheriff-start').then((m) => m.SheriffStart),
+  },
+  {
+    path: 'room/:id/sheriff/playing',
+    loadComponent: () => import('./pages/sheriff-playing').then((m) => m.SheriffPlaying),
+  },
+  {
+    path: 'room/:id/sheriff/reveal',
+    loadComponent: () => import('./pages/sheriff-phase').then((m) => m.SheriffPhase),
+    data: { sheriffPhase: 'REVEAL' },
   },
   { path: 'room/:id', loadComponent: () => import('./pages/lobby').then((m) => m.Lobby) },
   { path: '**', redirectTo: '' },

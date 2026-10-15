@@ -1,0 +1,237 @@
+:host {
+  display: block;
+  min-height: calc(100dvh - 96px);
+}
+
+.scene {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(110deg, rgb(33 10 27 / 0.86), rgb(76 34 29 / 0.42), rgb(27 8 28 / 0.82)),
+    url('../../assets/drinkduel/games/sheriff/backgrounds/game-bg.png') center / cover no-repeat;
+}
+
+.playing-shell {
+  width: min(100%, 1200px);
+  margin: 0 auto;
+  color: #fff;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+}
+
+.between {
+  justify-content: space-between;
+}
+
+.game-nav {
+  gap: 14px;
+  margin-bottom: 13px;
+}
+
+.gold-label {
+  color: #ffd477;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+}
+
+.game-label {
+  padding: 8px 13px;
+  color: #43200d;
+  border: 1px solid #fff0b0;
+  border-radius: 10px;
+  background: linear-gradient(#ffdc72, #e89425);
+  box-shadow: 0 4px 0 rgb(83 35 10 / 0.55);
+}
+
+.room-context,
+.dark-surface {
+  border: 1px solid rgb(255 227 194 / 0.32);
+  background: rgb(43 14 41 / 0.91);
+}
+
+.room-context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 12px;
+  border-radius: 14px;
+}
+
+.room-context strong {
+  font-size: 15px;
+  letter-spacing: 1.4px;
+}
+
+.game-heading {
+  gap: 18px;
+  margin-bottom: 15px;
+  padding: 18px 22px;
+  border: 1px solid rgb(255 220 177 / 0.36);
+  border-radius: 25px;
+  background: linear-gradient(120deg, rgb(57 18 49 / 0.96), rgb(94 40 37 / 0.9));
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+}
+
+.game-heading h1 {
+  margin: 0 0 5px;
+  font-size: clamp(30px, 4vw, 44px);
+  line-height: 1;
+}
+
+.muted-copy {
+  margin: 0;
+  color: #eadbe2;
+  font-size: 13px;
+}
+
+.role-chip {
+  flex: 0 0 auto;
+  padding: 8px 13px;
+  color: #fff1cf;
+  font-size: 12px;
+  font-weight: 850;
+  border-radius: 999px;
+}
+
+.role-dashboard {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(500px, 1.5fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.western-panel {
+  padding: 20px;
+  border: 1px solid rgb(255 220 177 / 0.34);
+  border-radius: 27px;
+  background: linear-gradient(145deg, rgb(57 19 52 / 0.97), rgb(27 8 32 / 0.97));
+  box-shadow:
+    0 7px 0 rgb(22 5 22 / 0.43),
+    0 22px 52px rgb(16 3 15 / 0.4);
+}
+
+.western-panel h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.own-role-card {
+  position: relative;
+  display: block;
+  width: min(100%, 245px);
+  aspect-ratio: 0.72;
+  padding: 0;
+  margin: 14px auto 12px;
+  overflow: hidden;
+  border: 2px solid #ffd66f;
+  border-radius: 23px;
+  background: #35152e;
+  box-shadow:
+    0 7px 0 #7d3916,
+    0 17px 34px rgb(14 3 15 / 0.42);
+  touch-action: none;
+}
+
+button.own-role-card {
+  min-height: 0;
+}
+
+.own-role-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+}
+
+.role-caption {
+  position: absolute;
+  right: 9px;
+  bottom: 9px;
+  left: 9px;
+  display: grid;
+  gap: 2px;
+  padding: 9px;
+  color: #fff;
+  text-align: center;
+  border: 1px solid rgb(255 232 189 / 0.45);
+  border-radius: 13px;
+  background: rgb(42 12 38 / 0.9);
+}
+
+.role-caption span {
+  color: #ffd778;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+}
+
+.role-caption strong {
+  font-size: 20px;
+}
+
+.hidden-caption {
+  background: rgb(36 12 49 / 0.92);
+}
+
+.role-help {
+  text-align: center;
+}
+
+.loading {
+  width: fit-content;
+  margin: 18vh auto 0;
+  padding: 18px 22px;
+  color: #fff;
+  border-radius: 18px;
+  background: rgb(46 16 50 / 0.92);
+}
+
+@media (max-width: 900px) {
+  .role-dashboard {
+    grid-template-columns: minmax(230px, 0.75fr) minmax(390px, 1.25fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .mobile-stack {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .role-dashboard {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  :host {
+    min-height: calc(100dvh - 76px);
+  }
+
+  .compact-panel {
+    padding: 16px 13px;
+    border-radius: 22px;
+  }
+
+  .game-heading h1 {
+    font-size: 29px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .own-role-card,
+  button {
+    animation: none;
+    transition: none;
+  }
+}

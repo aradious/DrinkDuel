@@ -77,7 +77,9 @@ import { RoomClient } from '../core/room-client';
                         </svg>
                       </button>
                       @if (!canSelect(game.id) && !client.busy()) {
-                        <p class="start-help">At least two connected players are needed to start.</p>
+                        <p class="start-help">
+                          At least {{ game.minimumPlayers }} connected players are needed to start.
+                        </p>
                       }
                     } @else {
                       <p class="player-waiting" role="status">
@@ -123,6 +125,7 @@ export class ChooseGame {
       description: 'Guess the name everyone can see but you.',
       metadata: ['2–20 Players', 'Talking', 'Party'],
       artwork: 'assets/drinkduel/games/who-am-i.webp',
+      minimumPlayers: 2,
     },
     {
       id: 'LIARS_DICE',
@@ -130,6 +133,15 @@ export class ChooseGame {
       description: 'Roll in secret, bluff with confidence, and call the crew out.',
       metadata: ['2–20 Players', 'Bluffing', 'Party'],
       artwork: 'assets/drinkduel/games/liars-dice/liars-dice-bg.webp',
+      minimumPlayers: 2,
+    },
+    {
+      id: 'SHERIFF',
+      title: 'Sheriff',
+      description: 'Keep your role secret, survive the showdown, and trust nobody too quickly.',
+      metadata: ['4–20 Players', 'Hidden Roles', 'Social'],
+      artwork: 'assets/drinkduel/games/sheriff/cover.png',
+      minimumPlayers: 4,
     },
   ] as const;
 
@@ -138,15 +150,17 @@ export class ChooseGame {
   }
 
   canSelect(gameId: (typeof this.games)[number]['id']): boolean {
-    if (this.connectedPlayerCount() < 2) return false;
-    return gameId === 'WHO_AM_I'
-      ? this.client.can('GM_START_GAME')
-      : this.client.can('GM_SELECT_LIARS_DICE');
+    const game = this.games.find((candidate) => candidate.id === gameId);
+    if (!game || this.connectedPlayerCount() < game.minimumPlayers) return false;
+    if (gameId === 'WHO_AM_I') return this.client.can('GM_START_GAME');
+    if (gameId === 'LIARS_DICE') return this.client.can('GM_SELECT_LIARS_DICE');
+    return this.client.can('GM_SELECT_SHERIFF');
   }
 
   selectGame(gameId: (typeof this.games)[number]['id']): void {
     if (!this.roomReady() || !this.canSelect(gameId)) return;
     if (gameId === 'WHO_AM_I') this.client.action('GM_START_GAME');
-    else this.client.selectLiarsDice();
+    else if (gameId === 'LIARS_DICE') this.client.selectLiarsDice();
+    else this.client.selectSheriff();
   }
 }
