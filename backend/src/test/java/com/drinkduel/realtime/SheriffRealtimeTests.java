@@ -223,6 +223,13 @@ class SheriffRealtimeTests {
         assertTrue(gm.client.state().allowedActions().containsAll(
                 List.of("GM_RESTART_SHERIFF", "GM_BACK_TO_ROOM")));
 
+        excluded = peer(null);
+        send(excluded, resume(excludedToken));
+        assertEquals("REVEAL", excluded.client.state().sheriff().phase());
+        assertNull(excluded.client.state().sheriff().ownRole());
+        assertEquals(5, excluded.client.state().sheriff().participants().size());
+        assertEquals(5, excluded.client.state().sheriff().publicRoles().size());
+
         send(gm, command("GM_RESTART_SHERIFF", oldSession, null, null));
         UUID nextSession = gm.client.state().sessionId();
         var start = gm.client.state().sheriff();

@@ -1,0 +1,271 @@
+:host {
+  display: block;
+}
+
+.reveal-panel,
+.excluded-panel {
+  padding: 21px;
+  border: 1px solid rgb(255 220 177 / 0.36);
+  border-radius: 28px;
+  background: linear-gradient(145deg, rgb(57 19 52 / 0.97), rgb(27 8 32 / 0.97));
+  box-shadow:
+    0 7px 0 rgb(22 5 22 / 0.43),
+    0 22px 52px rgb(16 3 15 / 0.4);
+}
+
+.excluded-panel {
+  margin-top: 17px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 15px;
+}
+
+.section-heading p {
+  margin: 0 0 5px;
+  color: #ffd477;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+}
+
+.section-heading h2 {
+  margin: 0;
+  font-size: 25px;
+}
+
+.section-heading > span {
+  flex: 0 0 auto;
+  padding: 7px 11px;
+  color: #fff1d1;
+  font-size: 11px;
+  font-weight: 850;
+  border: 1px solid rgb(255 255 255 / 0.2);
+  border-radius: 999px;
+  background: rgb(78 28 62 / 0.82);
+}
+
+.role-grid,
+.excluded-grid {
+  display: grid;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.role-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.role-card {
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid #a46786;
+  border-bottom: 4px solid #7a3151;
+  border-radius: 21px;
+  background: linear-gradient(145deg, #703348, #3a1738);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.13);
+  animation: reveal-card 0.48s ease-out both;
+  animation-delay: calc(min(var(--reveal-index), 10) * 45ms);
+}
+
+.role-card.sheriff {
+  border-color: #f0b940;
+  border-bottom-color: #9a4e13;
+}
+
+.role-card.dead {
+  filter: saturate(0.72);
+}
+
+.role-art {
+  position: relative;
+  aspect-ratio: 0.76;
+  overflow: hidden;
+  border: 1px solid #ffd477;
+  border-radius: 16px;
+  background: #36152e;
+}
+
+.role-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.life {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 7px;
+  color: #ddfff1;
+  font-size: 9px;
+  font-weight: 900;
+  border-radius: 8px;
+  background: #286f5a;
+}
+
+.life.dead {
+  color: #fff1f3;
+  background: #9d344e;
+}
+
+.identity,
+.identity p {
+  display: flex;
+  align-items: center;
+}
+
+.identity {
+  gap: 9px;
+  min-width: 0;
+  margin-top: 11px;
+}
+
+.identity > div {
+  min-width: 0;
+}
+
+.identity h3,
+.excluded-grid h3 {
+  overflow: hidden;
+  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identity h3 {
+  font-size: 15px;
+}
+
+.identity p {
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 5px 0 0;
+}
+
+.badge {
+  padding: 3px 6px;
+  font-size: 8px;
+  font-weight: 850;
+  border-radius: 6px;
+}
+
+.you {
+  background: #8539d7;
+}
+
+.gm {
+  color: #583407;
+  background: #ffdf79;
+}
+
+.offline {
+  color: #f0dce6;
+  background: #6c465f;
+}
+
+.role-name {
+  display: block;
+  margin-top: 10px;
+  color: #ffe29a;
+  font-size: 20px;
+  text-align: center;
+}
+
+.excluded-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.excluded-grid li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  border-radius: 16px;
+  background: rgb(255 255 255 / 0.06);
+}
+
+.excluded-grid p {
+  margin: 3px 0 0;
+  color: #d9cbd6;
+  font-size: 11px;
+}
+
+.excluded-grid li > span {
+  padding: 4px 7px;
+  color: #d9fff0;
+  font-size: 9px;
+  border-radius: 7px;
+  background: #286f5a;
+}
+
+@keyframes reveal-card {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+}
+
+@media (max-width: 900px) {
+  .role-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .reveal-panel,
+  .excluded-panel {
+    padding: 15px 11px;
+    border-radius: 22px;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .role-grid,
+  .excluded-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .role-card {
+    display: grid;
+    grid-template-columns: minmax(105px, 0.72fr) minmax(0, 1fr);
+    gap: 0 10px;
+  }
+
+  .role-art {
+    grid-row: 1 / 3;
+  }
+
+  .role-name {
+    align-self: start;
+    margin-top: 6px;
+    text-align: left;
+  }
+
+  .excluded-grid li {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .excluded-grid li > span {
+    grid-column: 2;
+    width: fit-content;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .role-card {
+    animation: none;
+  }
+}

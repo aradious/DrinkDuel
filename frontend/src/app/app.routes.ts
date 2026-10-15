@@ -29,8 +29,7 @@ export const routes: Routes = [
   },
   {
     path: 'room/:id/sheriff/reveal',
-    loadComponent: () => import('./pages/sheriff-phase').then((m) => m.SheriffPhase),
-    data: { sheriffPhase: 'REVEAL' },
+    loadComponent: () => import('./pages/sheriff-reveal').then((m) => m.SheriffReveal),
   },
   { path: 'room/:id', loadComponent: () => import('./pages/lobby').then((m) => m.Lobby) },
   { path: '**', redirectTo: '' },

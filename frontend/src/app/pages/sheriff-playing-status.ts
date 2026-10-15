@@ -1,5 +1,5 @@
 import { Component, input } from '@angular/core';
-import { SheriffPlayingView, SheriffRole } from '../core/room.models';
+import { SheriffPlayingView, SheriffRevealView, SheriffRole } from '../core/room.models';
 
 @Component({
   selector: 'dd-sheriff-playing-status',
@@ -8,8 +8,8 @@ import { SheriffPlayingView, SheriffRole } from '../core/room.models';
     <section class="role-status" aria-labelledby="role-status-title">
       <div class="status-heading">
         <div>
-          <p>LIVE ROLE STATUS</p>
-          <h2 id="role-status-title">Town count</h2>
+          <p>{{ final() ? 'FINAL ROLE STATUS' : 'LIVE ROLE STATUS' }}</p>
+          <h2 id="role-status-title">{{ final() ? 'Final town count' : 'Town count' }}</h2>
         </div>
         <div class="overall-status" aria-label="Overall player status">
           <span
@@ -48,7 +48,8 @@ import { SheriffPlayingView, SheriffRole } from '../core/room.models';
   `,
 })
 export class SheriffPlayingStatus {
-  readonly game = input.required<SheriffPlayingView>();
+  readonly game = input.required<SheriffPlayingView | SheriffRevealView>();
+  readonly final = input(false);
 
   roleLabel(role: SheriffRole): string {
     return role.charAt(0) + role.slice(1).toLowerCase();

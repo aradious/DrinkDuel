@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SheriffPlaying } from './pages/sheriff-playing';
+import { SheriffReveal } from './pages/sheriff-reveal';
 import { routes } from './app.routes';
 
 describe('application routes', () => {
@@ -20,5 +21,12 @@ describe('application routes', () => {
     const component = await route?.loadComponent?.();
 
     expect(component).toBe(SheriffPlaying);
+  });
+
+  it('lazy-loads the complete Sheriff REVEAL screen', async () => {
+    const route = routes.find((candidate) => candidate.path === 'room/:id/sheriff/reveal');
+    const component = await route?.loadComponent?.();
+
+    expect(component).toBe(SheriffReveal);
   });
 });

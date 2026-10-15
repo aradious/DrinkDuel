@@ -179,6 +179,20 @@ describe('RoomClient Sheriff state and routing', () => {
     },
   );
 
+  it('routes every client only after the authoritative End Game snapshot enters REVEAL', () => {
+    const socket = connect(sheriffRoom('PLAYING', { roomRevision: 1 }));
+    navigate.mockClear();
+
+    socket.emit({
+      type: 'STATE',
+      room: sheriffRoom('REVEAL', { roomRevision: 2 }),
+    });
+
+    expect(client.room()?.sheriff?.phase).toBe('REVEAL');
+    expect(client.room()?.sheriff?.publicRoles).toHaveLength(4);
+    expect(navigate).toHaveBeenLastCalledWith(['/room', 'ABC234', 'sheriff', 'reveal']);
+  });
+
   it('restores the same private role after reconnect without persisting it in browser storage', () => {
     connect(sheriffRoom('PLAYING'));
     expect(client.room()?.sheriff?.ownRole).toBe('DEPUTY');
