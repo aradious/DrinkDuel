@@ -28,7 +28,8 @@ public final class SpaRouteController {
             "/room/{roomCode}",
             "/room/{roomCode}/games",
             "/room/{roomCode}/who-am-i/{*route}",
-            "/room/{roomCode}/liars-dice/{*route}"
+            "/room/{roomCode}/liars-dice/{*route}",
+            "/room/{roomCode}/sheriff/{*route}"
     })
     public void angularRoute(HttpServletRequest request, HttpServletResponse response) throws IOException {
         if (!index.exists()) {

@@ -17,7 +17,9 @@ final class SpaRouteControllerTests {
     @Test void knownAngularRoutesForwardToTheApplicationShell() throws Exception {
         for (String route : new String[]{
                 "/", "/create", "/join", "/room/ABC234", "/room/ABC234/games",
-                "/room/ABC234/who-am-i/playing", "/room/ABC234/liars-dice/reveal"}) {
+                "/room/ABC234/who-am-i/playing", "/room/ABC234/liars-dice/reveal",
+                "/room/ABC234/sheriff/start", "/room/ABC234/sheriff/playing",
+                "/room/ABC234/sheriff/reveal"}) {
             mvc.perform(get(route)).andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith("text/html"))
                     .andExpect(content().string(containsString("DrinkDuel 🎲 | Party Games with Friends")))
